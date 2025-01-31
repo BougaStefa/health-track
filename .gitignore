@@ -9,6 +9,9 @@ target/
 .idea/
 .vscode/
 *.iml
+.project
+.settings/
+.classpath
 
 # System files
 .DS_Store
