@@ -1,0 +1,16 @@
+version: '3.8'
+services:
+  db:
+    image: mariadb:latest
+    container_name: health-track-db
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: health_track_db
+      MYSQL_USER: health_track_user
+      MYSQL_PASSWORD: health_track_pw
+    ports:
+      - "3307:3306"
+    volumes:
+      - db-data:/var/lib/mysql
+volumes:
+  db-data:
