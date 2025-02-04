@@ -5,7 +5,7 @@ import java.sql.Connection;
 
 public class App {
   public static void main(String[] args) {
-    System.out.println("Starting CRUD App...");
+    System.out.println("Starting App...");
 
     // Test database connection
     Connection conn = DatabaseConnection.getConnection();
