@@ -6,11 +6,12 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: rootpassword
       MYSQL_DATABASE: health_track_db
-      MYSQL_USER: health_track_user
-      MYSQL_PASSWORD: health_track_pw
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
     ports:
       - "3307:3306"
     volumes:
       - db-data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
 volumes:
   db-data:

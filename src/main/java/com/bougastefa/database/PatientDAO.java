@@ -11,9 +11,9 @@ public class PatientDAO {
     public void addPatient(Patient patient) throws SQLException {
         String sql;
         if (patient instanceof InsuredPatient) {
-            sql = "INSERT INTO patient (patientID, firstname, surname, postcode, address, phone, email, insuranceID) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+            sql = "INSERT INTO Patient (patientID, firstname, surname, postcode, address, phone, email, insuranceID) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         } else {
-            sql = "INSERT INTO patient (patientID, firstname, surname, postcode, address, phone, email) VALUES (?, ?, ?, ?, ?, ?, ?)";
+            sql = "INSERT INTO Patient (patientID, firstname, surname, postcode, address, phone, email) VALUES (?, ?, ?, ?, ?, ?, ?)";
         }
 
         try (Connection conn = DatabaseConnection.getConnection();
@@ -38,7 +38,7 @@ public class PatientDAO {
     // Retrieve all patients
     public List<Patient> getAllPatients() throws SQLException {
         List<Patient> patients = new ArrayList<>();
-        String sql = "SELECT * FROM patient";
+        String sql = "SELECT * FROM Patient";
         try (Connection conn = DatabaseConnection.getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
@@ -68,9 +68,9 @@ public class PatientDAO {
     public void updatePatient(Patient patient) throws SQLException {
         String sql;
         if (patient instanceof InsuredPatient) {
-            sql = "UPDATE patient SET firstname = ?, surname = ?, postcode = ?, address = ?, phone = ?, email = ?, insuranceID = ? WHERE patientID = ?";
+            sql = "UPDATE Patient SET firstname = ?, surname = ?, postcode = ?, address = ?, phone = ?, email = ?, insuranceID = ? WHERE patientID = ?";
         } else {
-            sql = "UPDATE patient SET firstname = ?, surname = ?, postcode = ?, address = ?, phone = ?, email = ? WHERE patientID = ?";
+            sql = "UPDATE Patient SET firstname = ?, surname = ?, postcode = ?, address = ?, phone = ?, email = ? WHERE patientID = ?";
         }
 
         try (Connection conn = DatabaseConnection.getConnection();
@@ -96,7 +96,7 @@ public class PatientDAO {
 
     // Delete a patient
     public void deletePatient(String patientId) throws SQLException {
-        String sql = "DELETE FROM patient WHERE patientid = ?";
+        String sql = "DELETE FROM Patient WHERE patientid = ?";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, patientId);
