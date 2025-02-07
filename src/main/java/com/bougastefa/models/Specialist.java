@@ -2,7 +2,6 @@ package com.bougastefa.models;
 
 public class Specialist extends Doctor {
   private String specialization;
-  private int experience;
 
   // Constructor
   public Specialist(
@@ -11,11 +10,10 @@ public class Specialist extends Doctor {
       String surname,
       String address,
       String email,
-      String specialization,
-      int experience) {
-    super(doctorId, firstName, surname, address, email);
+      String hospital,
+      String specialization) {
+    super(doctorId, firstName, surname, address, email, hospital);
     this.specialization = specialization;
-    this.experience = experience;
   }
 
   // Getters and Setters
@@ -25,14 +23,6 @@ public class Specialist extends Doctor {
 
   public void setSpecialization(String specialization) {
     this.specialization = specialization;
-  }
-
-  public int getExperience() {
-    return experience;
-  }
-
-  public void setExperience(int experience) {
-    this.experience = experience;
   }
 
   // toString() method
@@ -53,11 +43,11 @@ public class Specialist extends Doctor {
         + ", email='"
         + getEmail()
         + '\''
+        + ", hospital="
+        + getHospital()
         + ", specialization='"
         + specialization
         + '\''
-        + ", experience="
-        + experience
         + '}';
   }
 }

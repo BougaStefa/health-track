@@ -6,17 +6,27 @@ public class Doctor {
   private String surname;
   private String address;
   private String email;
+  private String hospital;
 
   // Constructor
-  public Doctor(String doctorId, String firstName, String surname, String address, String email) {
+  public Doctor(String doctorId, String firstName, String surname, String address, String email,String hospital) {
     this.doctorId = doctorId;
     this.firstName = firstName;
     this.surname = surname;
     this.address = address;
     this.email = email;
+    this.hospital = hospital;
   }
 
   // Getters and Setters
+  public String getHospital() {
+    return hospital;
+  }
+
+  public void setHospital(String hospital) {
+    this.hospital = hospital;
+  }
+
   public String getDoctorId() {
     return doctorId;
   }
@@ -73,6 +83,8 @@ public class Doctor {
         + '\''
         + ", email='"
         + email
+        + ", hospital='"
+        + hospital
         + '\''
         + '}';
   }

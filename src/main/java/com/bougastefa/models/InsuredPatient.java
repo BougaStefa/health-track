@@ -1,9 +1,7 @@
 package com.bougastefa.models;
 
 public class InsuredPatient extends Patient {
-  private String insuranceType;
-  private String insuranceCompanyName;
-  private int durationOfInsurance;
+  private String insuranceId;
 
   // Constructor
   public InsuredPatient(
@@ -14,38 +12,18 @@ public class InsuredPatient extends Patient {
       String address,
       String email,
       String phone,
-      String insuranceType,
-      String insuranceCompanyName,
-      int durationOfInsurance) {
+      String insuranceId) {
     super(patientId, firstName, surname, postcode, address, email, phone);
-    this.insuranceType = insuranceType;
-    this.insuranceCompanyName = insuranceCompanyName;
-    this.durationOfInsurance = durationOfInsurance;
+    this.insuranceId = insuranceId;
   }
 
   // Getters and Setters
-  public String getInsuranceType() {
-    return insuranceType;
+  public String getInsuranceId() {
+    return insuranceId;
   }
 
-  public void setInsuranceType(String insuranceType) {
-    this.insuranceType = insuranceType;
-  }
-
-  public String getInsuranceCompanyName() {
-    return insuranceCompanyName;
-  }
-
-  public void setInsuranceCompanyName(String insuranceCompanyName) {
-    this.insuranceCompanyName = insuranceCompanyName;
-  }
-
-  public int getDurationOfInsurance() {
-    return durationOfInsurance;
-  }
-
-  public void setDurationOfInsurance(int durationOfInsurance) {
-    this.durationOfInsurance = durationOfInsurance;
+  public void setInsuranceId(String insuranceId) {
+    this.insuranceId = insuranceId;
   }
 
   // toString() method
@@ -72,14 +50,9 @@ public class InsuredPatient extends Patient {
         + ", phone='"
         + getPhone()
         + '\''
-        + ", insuranceType='"
-        + insuranceType
+        + ", insuranceId='"
+        + insuranceId
         + '\''
-        + ", insuranceCompanyName='"
-        + insuranceCompanyName
-        + '\''
-        + ", durationOfInsurance="
-        + durationOfInsurance
         + '}';
   }
 }

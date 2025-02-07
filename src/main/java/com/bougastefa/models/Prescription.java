@@ -5,8 +5,8 @@ import java.time.LocalDate;
 public class Prescription {
   private String prescriptionId;
   private LocalDate dateOfPrescribe;
-  private String dosage;
-  private String duration;
+  private int dosage;
+  private int duration;
   private String comment;
   private String doctorId;
   private String patientId; // Foreign key to Patient
@@ -16,8 +16,8 @@ public class Prescription {
   public Prescription(
       String prescriptionId,
       LocalDate dateOfPrescribe,
-      String dosage,
-      String duration,
+      int dosage,
+      int duration,
       String comment,
       String doctorId,
       String patientId,
@@ -49,19 +49,19 @@ public class Prescription {
     this.dateOfPrescribe = dateOfPrescribe;
   }
 
-  public String getDosage() {
+  public int getDosage() {
     return dosage;
   }
 
-  public void setDosage(String dosage) {
+  public void setDosage(int dosage) {
     this.dosage = dosage;
   }
 
-  public String getDuration() {
+  public int getDuration() {
     return duration;
   }
 
-  public void setDuration(String duration) {
+  public void setDuration(int duration) {
     this.duration = duration;
   }
 
