@@ -39,6 +39,25 @@ public class DrugDAO {
     return drugs;
   }
 
+  // Retrieve drug by ID
+  public Drug getDrugById(String drugId) throws SQLException {
+    String sql = "SELECT * FROM Drug WHERE drugID = ?";
+    try (Connection conn = DatabaseConnection.getConnection();
+        PreparedStatement stmt = conn.prepareStatement(sql)) {
+      stmt.setString(1, drugId);
+      try (ResultSet rs = stmt.executeQuery()) {
+        if (rs.next()) {
+          return new Drug(
+              rs.getString("drugID"),
+              rs.getString("drugname"),
+              rs.getString("sideeffects"),
+              rs.getString("benefits"));
+        }
+      }
+    }
+    return null;
+  }
+
   // Update a drug
   public void updateDrug(Drug drug) throws SQLException {
     String sql = "UPDATE Drug SET drugname = ?, sideeffects = ?, benefits = ? WHERE drugID = ?";

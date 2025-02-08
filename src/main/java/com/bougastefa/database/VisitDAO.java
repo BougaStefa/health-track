@@ -44,6 +44,29 @@ public class VisitDAO {
     return visits;
   }
 
+  // Retrieve visit by ID(s)
+  public Visit findById(String patientId, String doctorId, LocalDate dateOfVisit)
+      throws SQLException {
+    String sql = "SELECT * FROM Visit WHERE patientID = ? AND doctorID = ? AND dateOfVisit = ?";
+    try (Connection conn = DatabaseConnection.getConnection();
+        PreparedStatement stmt = conn.prepareStatement(sql)) {
+      stmt.setString(1, patientId);
+      stmt.setString(2, doctorId);
+      stmt.setDate(3, Date.valueOf(dateOfVisit));
+      try (ResultSet rs = stmt.executeQuery()) {
+        if (rs.next()) {
+          return new Visit(
+              rs.getDate("dateOfVisit").toLocalDate(),
+              rs.getString("patientID"),
+              rs.getString("doctorID"),
+              rs.getString("symptoms"),
+              rs.getString("diagnosisID"));
+        }
+      }
+    }
+    return null;
+  }
+
   // Update a visit
   public void updateVisit(Visit visit) throws SQLException {
     String sql =

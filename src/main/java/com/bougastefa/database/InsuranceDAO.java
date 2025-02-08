@@ -39,6 +39,25 @@ public class InsuranceDAO {
     return insurances;
   }
 
+  // Retrieve insurance by ID
+  public Insurance getInsuranceById(String insuranceId) throws SQLException {
+    String sql = "SELECT * FROM Insurance WHERE insuranceID = ?";
+    try (Connection conn = DatabaseConnection.getConnection();
+        PreparedStatement stmt = conn.prepareStatement(sql)) {
+      stmt.setString(1, insuranceId);
+      try (ResultSet rs = stmt.executeQuery()) {
+        if (rs.next()) {
+          return new Insurance(
+              rs.getString("insuranceID"),
+              rs.getString("company"),
+              rs.getString("address"),
+              rs.getString("phone"));
+        }
+      }
+    }
+    return null;
+  }
+
   // Update an insurance
   public void updateInsurance(Insurance insurance) throws SQLException {
     String sql = "UPDATE Insurance SET company = ?, address = ?, phone = ? WHERE insuranceID = ?";

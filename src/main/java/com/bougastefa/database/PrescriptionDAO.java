@@ -48,6 +48,28 @@ public class PrescriptionDAO {
     }
     return prescriptions;
   }
+  // Retrieve prescription by ID
+  public Prescription getPrescriptionById(String prescriptionId) throws SQLException {
+    String sql = "SELECT * FROM Prescription WHERE prescriptionID = ?";
+    try (Connection conn = DatabaseConnection.getConnection();
+        PreparedStatement stmt = conn.prepareStatement(sql)) {
+      stmt.setString(1, prescriptionId);
+      try (ResultSet rs = stmt.executeQuery()) {
+        if (rs.next()) {
+          return new Prescription(
+              rs.getString("prescriptionID"),
+              rs.getDate("dateprescriberd").toLocalDate(),
+              rs.getInt("dosage"),
+              rs.getInt("duration"),
+              rs.getString("comment"),
+              rs.getString("drugID"),
+              rs.getString("doctorID"),
+              rs.getString("patientID"));
+        }
+      }
+    }
+    return null;
+  }
 
   // Update a prescription
   public void updatePrescription(Prescription prescription) throws SQLException {
