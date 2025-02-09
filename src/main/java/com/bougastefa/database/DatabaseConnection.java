@@ -8,25 +8,25 @@ import java.sql.SQLException;
 import java.util.Properties;
 
 public class DatabaseConnection {
-  private static Connection connection = null;
+  private static final String URL;
+  private static final String USER;
+  private static final String PASSWORD;
 
-  public static Connection getConnection() {
-    if (connection == null) {
-      try (InputStream input =
-          DatabaseConnection.class.getClassLoader().getResourceAsStream("db.properties")) {
-        Properties props = new Properties();
-        props.load(input);
+  static {
+    try (InputStream input =
+        DatabaseConnection.class.getClassLoader().getResourceAsStream("db.properties")) {
+      Properties props = new Properties();
+      props.load(input);
 
-        String url = props.getProperty("db.url");
-        String user = props.getProperty("db.user");
-        String password = props.getProperty("db.password");
-
-        connection = DriverManager.getConnection(url, user, password);
-        System.out.println("Connected to the database!");
-      } catch (IOException | SQLException e) {
-        e.printStackTrace();
-      }
+      URL = props.getProperty("db.url");
+      USER = props.getProperty("db.user");
+      PASSWORD = props.getProperty("db.password");
+    } catch (IOException e) {
+      throw new RuntimeException("Failed to load database properties", e);
     }
-    return connection;
+  }
+
+  public static Connection getConnection() throws SQLException {
+    return DriverManager.getConnection(URL, USER, PASSWORD);
   }
 }
