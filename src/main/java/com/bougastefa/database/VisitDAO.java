@@ -45,7 +45,7 @@ public class VisitDAO {
   }
 
   // Retrieve visit by ID(s)
-  public Visit findById(String patientId, String doctorId, LocalDate dateOfVisit)
+  public Visit getVisit(String patientId, String doctorId, LocalDate dateOfVisit)
       throws SQLException {
     String sql = "SELECT * FROM Visit WHERE patientID = ? AND doctorID = ? AND dateOfVisit = ?";
     try (Connection conn = DatabaseConnection.getConnection();
