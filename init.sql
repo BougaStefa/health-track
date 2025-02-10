@@ -32,6 +32,7 @@ CREATE TABLE `Doctor` (
   `address` varchar(100) DEFAULT NULL,
   `email` varchar(50) DEFAULT NULL,
   `specialization` varchar(50) DEFAULT NULL,
+  `hospital` varchar(100) DEFAULT NULL,
   PRIMARY KEY (`doctorID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -42,31 +43,29 @@ CREATE TABLE `Doctor` (
 
 LOCK TABLES `Doctor` WRITE;
 /*!40000 ALTER TABLE `Doctor` DISABLE KEYS */;
-INSERT INTO `Doctor` VALUES
-('1724','Boothe','Pavlov','Suite 67','bpavlovd@liveinternet.ru','Ophthalmology'),
-('3326','Appolonia','Streatfeild','PO Box 77011','astreatfeild7@jugem.jp','Oncologists'),
-('3527','Georgena','Harradence','11th Floor','gharradencef@yelp.com','general'),
-('3573','Isaac','Karpushkin','Room 453','ikarpushkinj@bbb.org','Ophthalmology'),
-('3802','Benedetta','Amoore','Apt 905','bamooreb@pbs.org','emergency'),
-('4438','Killian','Pendell','Suite 41','kpendell8@shinystat.com','general'),
-('4449','Romola','Thurber','Room 1380','rthurberg@disqus.com','general'),
-('4516','Denny','Kohen','Apt 1449','dkohenc@bluehost.com','Oncologists'),
-('5512','Che','Vale','PO Box 91297','cvale3@forbes.com','intensivecare'),
-('5701','Paula','Rippen','Suite 54','prippeni@edublogs.org','emergency'),
-('6689','Blancha','Pickworth','PO Box 92515','bpickworthh@adobe.com','Ophthalmology'),
-('7697','Lottie','Deveral','12th Floor','ldeverale@wunderground.com','general'),
-('7763','Zahara','Klimkiewich','Room 870','zklimkiewich1@marriott.com','Anaesthetists'),
-('7781','Miguela','Greenhalgh','7th Floor','mgreenhalgh9@howstuffworks.com','Anaesthetists'),
-('7842','Guillaume','Insley','5th Floor','ginsley6@blinklist.com','Oncologists'),
-('7873','Therese','Giblin','Apt 192','tgiblin4@nymag.com','Ophthalmology'),
-('9055','Vanessa','Philippon','Room 539','vphilippon2@ow.ly','intensivecare'),
-('9116','Lars','Elwyn','Room 573','lelwyna@wikimedia.org','Oncologists'),
-('9783','Lavena','Yellowley','Room 1101','lyellowley5@nytimes.com','intensivecare'),
-('9947','Ole','Hadcock','Room 1193','ohadcock0@sakura.ne.jp','intensivecare');
+INSERT INTO `Doctor` (doctorID, firstname, surname, address, email, specialization, hospital) VALUES
+('1724','Boothe','Pavlov','Suite 67','bpavlovd@liveinternet.ru','Ophthalmology', NULL),
+('3326','Appolonia','Streatfeild','PO Box 77011','astreatfeild7@jugem.jp','Oncologists', NULL),
+('3527','Georgena','Harradence','11th Floor','gharradencef@yelp.com','general', NULL),
+('3573','Isaac','Karpushkin','Room 453','ikarpushkinj@bbb.org','Ophthalmology', NULL),
+('3802','Benedetta','Amoore','Apt 905','bamooreb@pbs.org','emergency', NULL),
+('4438','Killian','Pendell','Suite 41','kpendell8@shinystat.com','general', NULL),
+('4449','Romola','Thurber','Room 1380','rthurberg@disqus.com','general', NULL),
+('4516','Denny','Kohen','Apt 1449','dkohenc@bluehost.com','Oncologists', NULL),
+('5512','Che','Vale','PO Box 91297','cvale3@forbes.com','intensivecare', NULL),
+('5701','Paula','Rippen','Suite 54','prippeni@edublogs.org','emergency', NULL),
+('6689','Blancha','Pickworth','PO Box 92515','bpickworthh@adobe.com','Ophthalmology', NULL),
+('7697','Lottie','Deveral','12th Floor','ldeverale@wunderground.com','general', NULL),
+('7763','Zahara','Klimkiewich','Room 870','zklimkiewich1@marriott.com','Anaesthetists', NULL),
+('7781','Miguela','Greenhalgh','7th Floor','mgreenhalgh9@howstuffworks.com','Anaesthetists', NULL),
+('7842','Guillaume','Insley','5th Floor','ginsley6@blinklist.com','Oncologists', NULL),
+('7873','Therese','Giblin','Apt 192','tgiblin4@nymag.com','Ophthalmology', NULL),
+('9055','Vanessa','Philippon','Room 539','vphilippon2@ow.ly','intensivecare', NULL),
+('9116','Lars','Elwyn','Room 573','lelwyna@wikimedia.org','Oncologists', NULL),
+('9783','Lavena','Yellowley','Room 1101','lyellowley5@nytimes.com','intensivecare', NULL),
+('9947','Ole','Hadcock','Room 1193','ohadcock0@sakura.ne.jp','intensivecare', NULL);
 /*!40000 ALTER TABLE `Doctor` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
+UNLOCK TABLES;--
 -- Table structure for table `Drug`
 --
 
@@ -75,7 +74,7 @@ DROP TABLE IF EXISTS `Drug`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `Drug` (
   `drugID` varchar(50) NOT NULL,
-  `name` varchar(50) DEFAULT NULL,
+  `drugname` varchar(50) DEFAULT NULL,
   `sideeffects` varchar(150) DEFAULT NULL,
   `benefits` varchar(150) DEFAULT NULL,
   PRIMARY KEY (`drugID`)
