@@ -10,7 +10,7 @@ public class VisitDAO {
   // Insert a new visit
   public void addVisit(Visit visit) throws SQLException {
     String sql =
-        "INSERT INTO Visit (patientID, doctorID, dateOfVisit, symptoms, diagnosisID) VALUES (?, ?,"
+        "INSERT INTO Visit (patientID, doctorID, dateOfVisit, symptoms, diagnosis) VALUES (?, ?,"
             + " ?, ?, ?)";
     try (Connection conn = DatabaseConnection.getConnection();
         PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -37,7 +37,7 @@ public class VisitDAO {
                 rs.getString("patientID"),
                 rs.getString("doctorID"),
                 rs.getString("symptoms"),
-                rs.getString("diagnosisID"));
+                rs.getString("diagnosis"));
         visits.add(visit);
       }
     }
@@ -60,7 +60,7 @@ public class VisitDAO {
               rs.getString("patientID"),
               rs.getString("doctorID"),
               rs.getString("symptoms"),
-              rs.getString("diagnosisID"));
+              rs.getString("diagnosis"));
         }
       }
     }
@@ -70,7 +70,7 @@ public class VisitDAO {
   // Update a visit
   public void updateVisit(Visit visit) throws SQLException {
     String sql =
-        "UPDATE Visit SET symptoms = ?, diagnosisID = ? WHERE patientID = ? AND doctorID = ? AND"
+        "UPDATE Visit SET symptoms = ?, diagnosis = ? WHERE patientID = ? AND doctorID = ? AND"
             + " dateOfVisit = ?";
     try (Connection conn = DatabaseConnection.getConnection();
         PreparedStatement stmt = conn.prepareStatement(sql)) {

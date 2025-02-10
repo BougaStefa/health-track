@@ -9,7 +9,7 @@ public class PrescriptionDAO {
   // Insert a new prescription
   public void addPrescription(Prescription prescription) throws SQLException {
     String sql =
-        "INSERT INTO Prescription (prescriptionID, dateprescriberd, dosage, duration, comment,"
+        "INSERT INTO Prescription (prescriptionID, dateprescribed, dosage, duration, comment,"
             + " drugID, doctorID, patientID) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
     try (Connection conn = DatabaseConnection.getConnection();
         PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -36,7 +36,7 @@ public class PrescriptionDAO {
         Prescription prescription =
             new Prescription(
                 rs.getString("prescriptionID"),
-                rs.getDate("dateprescriberd").toLocalDate(),
+                rs.getDate("dateprescribed").toLocalDate(),
                 rs.getInt("dosage"),
                 rs.getInt("duration"),
                 rs.getString("comment"),
@@ -58,7 +58,7 @@ public class PrescriptionDAO {
         if (rs.next()) {
           return new Prescription(
               rs.getString("prescriptionID"),
-              rs.getDate("dateprescriberd").toLocalDate(),
+              rs.getDate("dateprescribed").toLocalDate(),
               rs.getInt("dosage"),
               rs.getInt("duration"),
               rs.getString("comment"),
@@ -74,7 +74,7 @@ public class PrescriptionDAO {
   // Update a prescription
   public void updatePrescription(Prescription prescription) throws SQLException {
     String sql =
-        "UPDATE Prescription SET dateprescriberd = ?, dosage = ?, duration = ?, comment = ?, drugID"
+        "UPDATE Prescription SET dateprescribed = ?, dosage = ?, duration = ?, comment = ?, drugID"
             + " = ?, doctorID = ?, patientID = ? WHERE prescriptionID = ?";
     try (Connection conn = DatabaseConnection.getConnection();
         PreparedStatement stmt = conn.prepareStatement(sql)) {
