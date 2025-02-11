@@ -21,7 +21,6 @@ public class PrescriptionPanel extends JPanel {
         prescriptionService = new PrescriptionService();
         setLayout(new BorderLayout());
 
-        // Create table with columns
         String[] columnNames = {"ID", "Date", "Dosage", "Duration", "Comment", "Drug ID", "Doctor ID", "Patient ID"};
         tableModel = new DefaultTableModel(columnNames, 0) {
             @Override
@@ -34,7 +33,6 @@ public class PrescriptionPanel extends JPanel {
         prescriptionTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         prescriptionTable.getTableHeader().setReorderingAllowed(false);
         
-        // Set column widths
         prescriptionTable.getColumnModel().getColumn(0).setPreferredWidth(50);
         prescriptionTable.getColumnModel().getColumn(1).setPreferredWidth(100);
         prescriptionTable.getColumnModel().getColumn(2).setPreferredWidth(70);
@@ -44,11 +42,9 @@ public class PrescriptionPanel extends JPanel {
         prescriptionTable.getColumnModel().getColumn(6).setPreferredWidth(70);
         prescriptionTable.getColumnModel().getColumn(7).setPreferredWidth(70);
 
-        // Add table to scroll pane
         JScrollPane scrollPane = new JScrollPane(prescriptionTable);
         add(scrollPane, BorderLayout.CENTER);
 
-        // Button panel
         JPanel buttonPanel = new JPanel();
         JButton addButton = new JButton("Add Prescription");
         JButton editButton = new JButton("Edit");
@@ -62,7 +58,6 @@ public class PrescriptionPanel extends JPanel {
 
         add(buttonPanel, BorderLayout.NORTH);
 
-        // Add listeners
         addButton.addActionListener(e -> showPrescriptionDialog(null));
         editButton.addActionListener(e -> {
             int row = prescriptionTable.getSelectedRow();
@@ -75,7 +70,6 @@ public class PrescriptionPanel extends JPanel {
         deleteButton.addActionListener(e -> deleteSelectedPrescription());
         refreshButton.addActionListener(e -> loadPrescriptions());
 
-        // Initial load
         loadPrescriptions();
     }
 
@@ -85,7 +79,6 @@ public class PrescriptionPanel extends JPanel {
                                    true);
         dialog.setLayout(new BorderLayout(10, 10));
 
-        // Create form panel
         JPanel formPanel = new JPanel(new GridLayout(8, 2, 5, 5));
         formPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
@@ -98,7 +91,6 @@ public class PrescriptionPanel extends JPanel {
         JTextField doctorIdField = new JTextField(20);
         JTextField patientIdField = new JTextField(20);
 
-        // If editing, populate fields
         if (existingPrescription != null) {
             idField.setText(existingPrescription.getPrescriptionId());
             idField.setEditable(false);
@@ -128,7 +120,6 @@ public class PrescriptionPanel extends JPanel {
         formPanel.add(new JLabel("Patient ID:"));
         formPanel.add(patientIdField);
 
-        // Button panel
         JPanel buttonPanel = new JPanel();
         JButton saveButton = new JButton("Save");
         JButton cancelButton = new JButton("Cancel");
@@ -194,14 +185,14 @@ public class PrescriptionPanel extends JPanel {
         int row = prescriptionTable.getSelectedRow();
         if (row != -1) {
             return new Prescription(
-                (String) tableModel.getValueAt(row, 0),
-                LocalDate.parse((String) tableModel.getValueAt(row, 1), dateFormatter),
-                Integer.parseInt(tableModel.getValueAt(row, 2).toString()),
-                Integer.parseInt(tableModel.getValueAt(row, 3).toString()),
-                (String) tableModel.getValueAt(row, 4),
-                (String) tableModel.getValueAt(row, 5),
-                (String) tableModel.getValueAt(row, 6),
-                (String) tableModel.getValueAt(row, 7)
+                (String) tableModel.getValueAt(row, 0),  // ID
+                LocalDate.parse((String) tableModel.getValueAt(row, 1), dateFormatter),  // Date
+                Integer.parseInt(tableModel.getValueAt(row, 2).toString()),  // Dosage
+                Integer.parseInt(tableModel.getValueAt(row, 3).toString()),  // Duration
+                (String) tableModel.getValueAt(row, 4),  // Comment
+                (String) tableModel.getValueAt(row, 5),  // Drug ID
+                (String) tableModel.getValueAt(row, 6),  // Doctor ID
+                (String) tableModel.getValueAt(row, 7)   // Patient ID
             );
         }
         return null;
@@ -244,7 +235,7 @@ public class PrescriptionPanel extends JPanel {
                     prescription.getDosage(),
                     prescription.getDuration(),
                     prescription.getComment(),
-                    prescription.getDrugId(),
+                    prescription.getDrugId(),  
                     prescription.getDoctorId(),
                     prescription.getPatientId()
                 });

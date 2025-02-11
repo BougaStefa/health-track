@@ -3,125 +3,123 @@ package com.bougastefa.models;
 import java.time.LocalDate;
 
 public class Prescription {
-  private String prescriptionId;
-  private LocalDate dateOfPrescribe;
-  private int dosage;
-  private int duration;
-  private String comment;
-  private String doctorId;
-  private String patientId; // Foreign key to Patient
-  private String drugId; // Foreign key to Drug
+    private String prescriptionId;
+    private LocalDate dateOfPrescribe;
+    private int dosage;
+    private int duration;
+    private String comment;
+    private String drugId;
+    private String doctorId;
+    private String patientId;
 
-  // Constructor
-  public Prescription(
-      String prescriptionId,
-      LocalDate dateOfPrescribe,
-      int dosage,
-      int duration,
-      String comment,
-      String doctorId,
-      String patientId,
-      String drugId) {
-    this.prescriptionId = prescriptionId;
-    this.dateOfPrescribe = dateOfPrescribe;
-    this.dosage = dosage;
-    this.duration = duration;
-    this.comment = comment;
-    this.doctorId = doctorId;
-    this.patientId = patientId;
-    this.drugId = drugId;
-  }
+    public Prescription(
+        String prescriptionId,
+        LocalDate dateOfPrescribe,
+        int dosage,
+        int duration,
+        String comment,
+        String drugId, 
+        String doctorId,
+        String patientId) {
+        this.prescriptionId = prescriptionId;
+        this.dateOfPrescribe = dateOfPrescribe;
+        this.dosage = dosage;
+        this.duration = duration;
+        this.comment = comment;
+        this.drugId = drugId;
+        this.doctorId = doctorId;
+        this.patientId = patientId;
+    }
 
-  // Getters and Setters
-  public String getPrescriptionId() {
-    return prescriptionId;
-  }
+    // Getters and Setters remain the same
+    public String getPrescriptionId() {
+        return prescriptionId;
+    }
 
-  public void setPrescriptionId(String prescriptionId) {
-    this.prescriptionId = prescriptionId;
-  }
+    public void setPrescriptionId(String prescriptionId) {
+        this.prescriptionId = prescriptionId;
+    }
 
-  public LocalDate getDateOfPrescribe() {
-    return dateOfPrescribe;
-  }
+    public LocalDate getDateOfPrescribe() {
+        return dateOfPrescribe;
+    }
 
-  public void setDateOfPrescribe(LocalDate dateOfPrescribe) {
-    this.dateOfPrescribe = dateOfPrescribe;
-  }
+    public void setDateOfPrescribe(LocalDate dateOfPrescribe) {
+        this.dateOfPrescribe = dateOfPrescribe;
+    }
 
-  public int getDosage() {
-    return dosage;
-  }
+    public int getDosage() {
+        return dosage;
+    }
 
-  public void setDosage(int dosage) {
-    this.dosage = dosage;
-  }
+    public void setDosage(int dosage) {
+        this.dosage = dosage;
+    }
 
-  public int getDuration() {
-    return duration;
-  }
+    public int getDuration() {
+        return duration;
+    }
 
-  public void setDuration(int duration) {
-    this.duration = duration;
-  }
+    public void setDuration(int duration) {
+        this.duration = duration;
+    }
 
-  public String getComment() {
-    return comment;
-  }
+    public String getComment() {
+        return comment;
+    }
 
-  public void setComment(String comment) {
-    this.comment = comment;
-  }
+    public void setComment(String comment) {
+        this.comment = comment;
+    }
 
-  public String getDoctorId() {
-    return doctorId;
-  }
+    public String getDrugId() {
+        return drugId;
+    }
 
-  public void setDoctorId(String doctorId) {
-    this.doctorId = doctorId;
-  }
+    public void setDrugId(String drugId) {
+        this.drugId = drugId;
+    }
 
-  public String getPatientId() {
-    return patientId;
-  }
+    public String getDoctorId() {
+        return doctorId;
+    }
 
-  public void setPatientId(String patientId) {
-    this.patientId = patientId;
-  }
+    public void setDoctorId(String doctorId) {
+        this.doctorId = doctorId;
+    }
 
-  public String getDrugId() {
-    return drugId;
-  }
+    public String getPatientId() {
+        return patientId;
+    }
 
-  public void setDrugId(String drugId) {
-    this.drugId = drugId;
-  }
+    public void setPatientId(String patientId) {
+        this.patientId = patientId;
+    }
 
-  @Override
-  public String toString() {
-    return "Prescription{"
-        + "prescriptionid='"
-        + prescriptionId
-        + '\''
-        + ", dateprescriberd="
-        + dateOfPrescribe
-        + ", dosage="
-        + dosage
-        + ", duration="
-        + duration
-        + ", comment='"
-        + comment
-        + '\''
-        + ", drugid='"
-        + drugId
-        + '\''
-        + ", doctorid='"
-        + doctorId
-        + '\''
-        + // Added doctorid
-        ", patientid='"
-        + patientId
-        + '\''
-        + '}';
-  }
+    @Override
+    public String toString() {
+        return "Prescription{"
+            + "prescriptionid='"
+            + prescriptionId
+            + '\''
+            + ", dateprescribed="
+            + dateOfPrescribe
+            + ", dosage="
+            + dosage
+            + ", duration="
+            + duration
+            + ", comment='"
+            + comment
+            + '\''
+            + ", drugid='"
+            + drugId
+            + '\''
+            + ", doctorid='"
+            + doctorId
+            + '\''
+            + ", patientid='"
+            + patientId
+            + '\''
+            + '}';
+    }
 }
