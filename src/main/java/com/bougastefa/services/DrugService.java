@@ -6,55 +6,41 @@ import java.sql.SQLException;
 import java.util.List;
 
 public class DrugService {
-    private DrugDAO drugDAO = new DrugDAO();
+  private DrugDAO drugDAO;
 
-    // Add a new drug
-    public void addDrug(Drug drug) {
-        try {
-            drugDAO.addDrug(drug);
-            System.out.println("Drug added successfully!");
-        } catch (SQLException e) {
-            System.err.println("Error adding drug: " + e.getMessage());
-        }
-    }
+  public DrugService() {
+    drugDAO = new DrugDAO();
+  }
 
-    // Retrieve all drugs
-    public List<Drug> getAllDrugs() {
-        try {
-            return drugDAO.getAllDrugs();
-        } catch (SQLException e) {
-            System.err.println("Error fetching drugs: " + e.getMessage());
-            return List.of(); // Return an empty list on error
-        }
-    }
+  public void addDrug(Drug drug) throws SQLException {
+    drugDAO.addDrug(drug);
+  }
 
-    // Retrieve a drug by ID
-    public Drug getDrugById(String drugId) {
-        try {
-            return drugDAO.getDrugById(drugId);
-        } catch (SQLException e) {
-            System.err.println("Error fetching drug: " + e.getMessage());
-            return null;
-        }
-    }
+  public List<Drug> getAllDrugs() throws SQLException {
+    return drugDAO.getAllDrugs();
+  }
 
-    // Update a drug
-    public void updateDrug(Drug drug) {
-        try {
-            drugDAO.updateDrug(drug);
-            System.out.println("Drug updated successfully!");
-        } catch (SQLException e) {
-            System.err.println("Error updating drug: " + e.getMessage());
-        }
-    }
+  public Drug getDrugById(String drugId) throws SQLException {
+    return drugDAO.getDrugById(drugId);
+  }
 
-    // Delete a drug
-    public void deleteDrug(String drugId) {
-        try {
-            drugDAO.deleteDrug(drugId);
-            System.out.println("Drug deleted successfully!");
-        } catch (SQLException e) {
-            System.err.println("Error deleting drug: " + e.getMessage());
-        }
-    }
+  public List<Drug> getDrugsByName(String name) throws SQLException {
+    return drugDAO.getDrugsByName(name);
+  }
+
+  public List<Drug> getDrugsBySideEffects(String sideEffects) throws SQLException {
+    return drugDAO.getDrugsBySideEffects(sideEffects);
+  }
+
+  public List<Drug> getDrugsByBenefits(String benefits) throws SQLException {
+    return drugDAO.getDrugsByBenefits(benefits);
+  }
+
+  public void updateDrug(Drug drug) throws SQLException {
+    drugDAO.updateDrug(drug);
+  }
+
+  public void deleteDrug(String drugId) throws SQLException {
+    drugDAO.deleteDrug(drugId);
+  }
 }
