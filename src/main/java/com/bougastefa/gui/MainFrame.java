@@ -33,7 +33,7 @@ public class MainFrame extends JFrame {
 
     // Menu
     JMenuBar menuBar = new JMenuBar();
-    JMenu menu = new JMenu("Entities");
+    JMenu menu = new JMenu("Tables");
 
     JMenuItem drugMenuItem = new JMenuItem("Drugs");
     drugMenuItem.addActionListener(e -> cardLayout.show(mainPanel, "DrugPanel"));

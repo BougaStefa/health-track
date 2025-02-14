@@ -12,41 +12,40 @@ public class DrugPanel extends JPanel {
     private DefaultTableModel tableModel;
     private JTable drugTable;
 
-    // Filtering fields
-    private JTextField filterNameField;
-    private JTextField filterSideEffectsField;
-    private JTextField filterBenefitsField;
-
     public DrugPanel() {
         drugService = new DrugService();
         setLayout(new BorderLayout());
 
-        // Top panel for filtering and refresh
+        // Top panel with three sections:
+        // Left: Advanced Filter and Clear Filters buttons.
+        // Center: Add, Edit, Delete buttons.
+        // Right: Refresh button.
         JPanel topPanel = new JPanel(new BorderLayout());
-        JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        
+        // Left section: Advanced Filter and Clear Filters buttons
+        JPanel leftButtonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JButton advancedFilterButton = new JButton("Advanced Filter");
+        JButton clearFiltersButton = new JButton("Clear Filters");
+        leftButtonPanel.add(advancedFilterButton);
+        leftButtonPanel.add(clearFiltersButton);
+        
+        // Center section: Add, Edit and Delete buttons
+        JPanel centerButtonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        JButton addButton = new JButton("Add Drug");
+        JButton editButton = new JButton("Edit Drug");
+        JButton deleteButton = new JButton("Delete Drug");
+        centerButtonPanel.add(addButton);
+        centerButtonPanel.add(editButton);
+        centerButtonPanel.add(deleteButton);
 
-        filterPanel.add(new JLabel("Name:"));
-        filterNameField = new JTextField(10);
-        filterPanel.add(filterNameField);
-
-        filterPanel.add(new JLabel("Side Effects:"));
-        filterSideEffectsField = new JTextField(10);
-        filterPanel.add(filterSideEffectsField);
-
-        filterPanel.add(new JLabel("Benefits:"));
-        filterBenefitsField = new JTextField(10);
-        filterPanel.add(filterBenefitsField);
-
-        JButton filterButton = new JButton("Filter");
-        filterPanel.add(filterButton);
-
-        JButton clearFilterButton = new JButton("Clear Filters");
-        filterPanel.add(clearFilterButton);
-
-        topPanel.add(filterPanel, BorderLayout.CENTER);
-
+        // Right section: Refresh button
+        JPanel rightButtonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         JButton refreshButton = new JButton("Refresh");
-        topPanel.add(refreshButton, BorderLayout.EAST);
+        rightButtonPanel.add(refreshButton);
+        
+        topPanel.add(leftButtonPanel, BorderLayout.WEST);
+        topPanel.add(centerButtonPanel, BorderLayout.CENTER);
+        topPanel.add(rightButtonPanel, BorderLayout.EAST);
         add(topPanel, BorderLayout.NORTH);
 
         // Setup table for Drugs
@@ -63,27 +62,10 @@ public class DrugPanel extends JPanel {
         JScrollPane scrollPane = new JScrollPane(drugTable);
         add(scrollPane, BorderLayout.CENTER);
 
-        // Button panel for add, edit, delete actions
-        JPanel buttonPanel = new JPanel();
-        JButton addButton = new JButton("Add Drug");
-        JButton editButton = new JButton("Edit Drug");
-        JButton deleteButton = new JButton("Delete Drug");
-
-        buttonPanel.add(addButton);
-        buttonPanel.add(editButton);
-        buttonPanel.add(deleteButton);
-        add(buttonPanel, BorderLayout.SOUTH);
-
-        // Listeners for buttons
+        // Listeners for top buttons
         refreshButton.addActionListener(e -> loadDrugs());
-
-        filterButton.addActionListener(e -> applyFilters());
-        clearFilterButton.addActionListener(e -> {
-            filterNameField.setText("");
-            filterSideEffectsField.setText("");
-            filterBenefitsField.setText("");
-            loadDrugs();
-        });
+        advancedFilterButton.addActionListener(e -> showAdvancedFilterDialog());
+        clearFiltersButton.addActionListener(e -> loadDrugs());
 
         addButton.addActionListener(e -> showDrugDialog(null));
         editButton.addActionListener(e -> {
@@ -169,19 +151,19 @@ public class DrugPanel extends JPanel {
         formPanel.add(benefitsField);
 
         // Button panel for save and cancel
-        JPanel buttonPanel = new JPanel();
+        JPanel dialogButtonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         JButton saveButton = new JButton("Save");
         JButton cancelButton = new JButton("Cancel");
-        buttonPanel.add(saveButton);
-        buttonPanel.add(cancelButton);
+        dialogButtonPanel.add(saveButton);
+        dialogButtonPanel.add(cancelButton);
 
         saveButton.addActionListener(e -> {
             try {
                 Drug drug = new Drug(
-                    idField.getText(),
-                    nameField.getText(),
-                    sideEffectsField.getText(),
-                    benefitsField.getText()
+                        idField.getText(),
+                        nameField.getText(),
+                        sideEffectsField.getText(),
+                        benefitsField.getText()
                 );
                 if (existingDrug == null) {
                     drugService.addDrug(drug);
@@ -203,7 +185,7 @@ public class DrugPanel extends JPanel {
         cancelButton.addActionListener(e -> dialog.dispose());
 
         dialog.add(formPanel, BorderLayout.CENTER);
-        dialog.add(buttonPanel, BorderLayout.SOUTH);
+        dialog.add(dialogButtonPanel, BorderLayout.SOUTH);
         dialog.pack();
         dialog.setLocationRelativeTo(this);
         dialog.setVisible(true);
@@ -234,37 +216,83 @@ public class DrugPanel extends JPanel {
         }
     }
 
-    private void applyFilters() {
-        try {
-            String nameFilter = filterNameField.getText().trim();
-            String sideEffectsFilter = filterSideEffectsField.getText().trim();
-            String benefitsFilter = filterBenefitsField.getText().trim();
+    // Popup dialog for advanced filtering
+    private void showAdvancedFilterDialog() {
+        JDialog filterDialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this),
+                "Advanced Filter", true);
+        filterDialog.setLayout(new BorderLayout(10, 10));
 
-            List<Drug> drugs = drugService.getAllDrugs();
+        // Form panel for entering advanced filter criteria
+        JPanel formPanel = new JPanel(new GridLayout(4, 2, 5, 5));
+        formPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-            // Apply filters using streams
-            if (!nameFilter.isEmpty()) {
-                drugs = drugs.stream()
-                        .filter(drug -> drug.getName().toLowerCase().contains(nameFilter.toLowerCase()))
-                        .toList();
-            }
-            if (!sideEffectsFilter.isEmpty()) {
-                drugs = drugs.stream()
-                        .filter(drug -> drug.getSideEffects().toLowerCase().contains(sideEffectsFilter.toLowerCase()))
-                        .toList();
-            }
-            if (!benefitsFilter.isEmpty()) {
-                drugs = drugs.stream()
-                        .filter(drug -> drug.getBenefits().toLowerCase().contains(benefitsFilter.toLowerCase()))
-                        .toList();
-            }
+        JTextField filterIdField = new JTextField(20);
+        JTextField filterNameField = new JTextField(20);
+        JTextField filterSideEffectsField = new JTextField(20);
+        JTextField filterBenefitsField = new JTextField(20);
 
-            populateTable(drugs);
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this,
-                    "Error filtering drugs: " + ex.getMessage(),
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE);
-        }
+        formPanel.add(new JLabel("Drug ID contains:"));
+        formPanel.add(filterIdField);
+        formPanel.add(new JLabel("Name contains:"));
+        formPanel.add(filterNameField);
+        formPanel.add(new JLabel("Side Effects contains:"));
+        formPanel.add(filterSideEffectsField);
+        formPanel.add(new JLabel("Benefits contains:"));
+        formPanel.add(filterBenefitsField);
+
+        // Button panel for filter actions
+        JPanel filterButtonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JButton filterButton = new JButton("Filter");
+        JButton cancelButton = new JButton("Cancel");
+        filterButtonPanel.add(filterButton);
+        filterButtonPanel.add(cancelButton);
+
+        // Action for Filter button: apply filters based on criteria
+        filterButton.addActionListener(e -> {
+            try {
+                List<Drug> drugs = drugService.getAllDrugs();
+
+                String idFilter = filterIdField.getText().trim();
+                String nameFilter = filterNameField.getText().trim();
+                String sideEffectsFilter = filterSideEffectsField.getText().trim();
+                String benefitsFilter = filterBenefitsField.getText().trim();
+
+                if (!idFilter.isEmpty()) {
+                    drugs = drugs.stream() 
+                            .filter(drug -> drug.getDrugId().toLowerCase().contains(idFilter.toLowerCase()))
+                            .toList();
+                }
+                if (!nameFilter.isEmpty()) {
+                    drugs = drugs.stream()
+                            .filter(drug -> drug.getName().toLowerCase().contains(nameFilter.toLowerCase()))
+                            .toList();
+                }
+                if (!sideEffectsFilter.isEmpty()) {
+                    drugs = drugs.stream()
+                            .filter(drug -> drug.getSideEffects().toLowerCase().contains(sideEffectsFilter.toLowerCase()))
+                            .toList();
+                }
+                if (!benefitsFilter.isEmpty()) {
+                    drugs = drugs.stream()
+                            .filter(drug -> drug.getBenefits().toLowerCase().contains(benefitsFilter.toLowerCase()))
+                            .toList();
+                }
+                populateTable(drugs);
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this,
+                        "Error filtering drugs: " + ex.getMessage(),
+                        "Error",
+                        JOptionPane.ERROR_MESSAGE);
+            }
+            filterDialog.dispose();
+        });
+
+        cancelButton.addActionListener(e -> filterDialog.dispose());
+
+        filterDialog.add(formPanel, BorderLayout.CENTER);
+        filterDialog.add(filterButtonPanel, BorderLayout.SOUTH);
+        filterDialog.pack();
+        filterDialog.setLocationRelativeTo(this);
+        filterDialog.setVisible(true);
     }
 }
