@@ -21,7 +21,39 @@ public class VisitPanel extends JPanel {
     visitService = new VisitService();
     setLayout(new BorderLayout());
 
-    // Create table with columns
+    // Top panel with three sections:
+    // Left: Advanced Filter and Clear Filters buttons.
+    // Center: Add, Edit, Delete buttons.
+    // Right: Refresh button.
+    JPanel topPanel = new JPanel(new BorderLayout());
+
+    // Left section: Advanced Filter and Clear Filters buttons
+    JPanel leftButtonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+    JButton advancedFilterButton = new JButton("Advanced Filter");
+    JButton clearFiltersButton = new JButton("Clear Filters");
+    leftButtonPanel.add(advancedFilterButton);
+    leftButtonPanel.add(clearFiltersButton);
+
+    // Center section: Add, Edit and Delete buttons
+    JPanel centerButtonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+    JButton addButton = new JButton("Add Visit");
+    JButton editButton = new JButton("Edit Visit");
+    JButton deleteButton = new JButton("Delete Visit");
+    centerButtonPanel.add(addButton);
+    centerButtonPanel.add(editButton);
+    centerButtonPanel.add(deleteButton);
+
+    // Right section: Refresh button
+    JPanel rightButtonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+    JButton refreshButton = new JButton("Refresh");
+    rightButtonPanel.add(refreshButton);
+
+    topPanel.add(leftButtonPanel, BorderLayout.WEST);
+    topPanel.add(centerButtonPanel, BorderLayout.CENTER);
+    topPanel.add(rightButtonPanel, BorderLayout.EAST);
+    add(topPanel, BorderLayout.NORTH);
+
+    // Setup table for Visits
     String[] columnNames = {"Date", "Symptoms", "Diagnosis", "Doctor ID", "Patient ID"};
     tableModel =
         new DefaultTableModel(columnNames, 0) {
@@ -34,48 +66,65 @@ public class VisitPanel extends JPanel {
     visitTable = new JTable(tableModel);
     visitTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
     visitTable.getTableHeader().setReorderingAllowed(false);
-
-    // Set column widths
-    visitTable.getColumnModel().getColumn(0).setPreferredWidth(100);
-    visitTable.getColumnModel().getColumn(1).setPreferredWidth(200);
-    visitTable.getColumnModel().getColumn(2).setPreferredWidth(200);
-    visitTable.getColumnModel().getColumn(3).setPreferredWidth(80);
-    visitTable.getColumnModel().getColumn(4).setPreferredWidth(80);
-
-    // Add table to scroll pane
     JScrollPane scrollPane = new JScrollPane(visitTable);
     add(scrollPane, BorderLayout.CENTER);
 
-    // Button panel
-    JPanel buttonPanel = new JPanel();
-    JButton addButton = new JButton("Add Visit");
-    JButton editButton = new JButton("Edit");
-    JButton deleteButton = new JButton("Delete");
-    JButton refreshButton = new JButton("Refresh");
+    // Listeners for top buttons
+    refreshButton.addActionListener(e -> loadVisits());
+    advancedFilterButton.addActionListener(e -> showAdvancedFilterDialog());
+    clearFiltersButton.addActionListener(e -> loadVisits());
 
-    buttonPanel.add(addButton);
-    buttonPanel.add(editButton);
-    buttonPanel.add(deleteButton);
-    buttonPanel.add(refreshButton);
-
-    add(buttonPanel, BorderLayout.NORTH);
-
-    // Add listeners
     addButton.addActionListener(e -> showVisitDialog(null));
     editButton.addActionListener(
         e -> {
-          int row = visitTable.getSelectedRow();
-          if (row != -1) {
-            showVisitDialog(getSelectedVisit());
+          Visit selectedVisit = getSelectedVisit();
+          if (selectedVisit != null) {
+            showVisitDialog(selectedVisit);
           } else {
             JOptionPane.showMessageDialog(this, "Please select a visit to edit");
           }
         });
     deleteButton.addActionListener(e -> deleteSelectedVisit());
-    refreshButton.addActionListener(e -> loadVisits());
 
-    // Initial load
+    // Initial load of visits
     loadVisits();
+  }
+
+  private void loadVisits() {
+    try {
+      List<Visit> visits = visitService.getAllVisits();
+      populateTable(visits);
+    } catch (Exception ex) {
+      JOptionPane.showMessageDialog(
+          this, "Error loading visits: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+    }
+  }
+
+  private void populateTable(List<Visit> visits) {
+    tableModel.setRowCount(0);
+    for (Visit visit : visits) {
+      tableModel.addRow(
+          new Object[] {
+            visit.getDateOfVisit().format(dateFormatter),
+            visit.getSymptoms(),
+            visit.getDiagnosis(),
+            visit.getDoctorId(),
+            visit.getPatientId()
+          });
+    }
+  }
+
+  private Visit getSelectedVisit() {
+    int row = visitTable.getSelectedRow();
+    if (row != -1) {
+      return new Visit(
+          LocalDate.parse((String) tableModel.getValueAt(row, 0), dateFormatter),
+          (String) tableModel.getValueAt(row, 1),
+          (String) tableModel.getValueAt(row, 2),
+          (String) tableModel.getValueAt(row, 3),
+          (String) tableModel.getValueAt(row, 4));
+    }
+    return null;
   }
 
   private void showVisitDialog(Visit existingVisit) {
@@ -86,7 +135,7 @@ public class VisitPanel extends JPanel {
             true);
     dialog.setLayout(new BorderLayout(10, 10));
 
-    // Create form panel
+    // Form panel for entering visit details
     JPanel formPanel = new JPanel(new GridLayout(5, 2, 5, 5));
     formPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
@@ -96,7 +145,6 @@ public class VisitPanel extends JPanel {
     JTextField doctorIdField = new JTextField(20);
     JTextField patientIdField = new JTextField(20);
 
-    // If editing, populate fields
     if (existingVisit != null) {
       dateField.setText(existingVisit.getDateOfVisit().format(dateFormatter));
       symptomsField.setText(existingVisit.getSymptoms());
@@ -116,10 +164,12 @@ public class VisitPanel extends JPanel {
     formPanel.add(new JLabel("Patient ID:"));
     formPanel.add(patientIdField);
 
-    // Button panel
-    JPanel buttonPanel = new JPanel();
+    // Button panel for save and cancel
+    JPanel dialogButtonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
     JButton saveButton = new JButton("Save");
     JButton cancelButton = new JButton("Cancel");
+    dialogButtonPanel.add(saveButton);
+    dialogButtonPanel.add(cancelButton);
 
     saveButton.addActionListener(
         e -> {
@@ -132,18 +182,15 @@ public class VisitPanel extends JPanel {
                     diagnosisField.getText(),
                     doctorIdField.getText(),
                     patientIdField.getText());
-
             if (existingVisit == null) {
               visitService.addVisit(visit);
+              JOptionPane.showMessageDialog(this, "Visit added successfully");
             } else {
               visitService.updateVisit(visit);
+              JOptionPane.showMessageDialog(this, "Visit updated successfully");
             }
-
             loadVisits();
             dialog.dispose();
-            JOptionPane.showMessageDialog(
-                this,
-                existingVisit == null ? "Visit added successfully" : "Visit updated successfully");
           } catch (DateTimeParseException dtpe) {
             JOptionPane.showMessageDialog(
                 this,
@@ -158,27 +205,11 @@ public class VisitPanel extends JPanel {
 
     cancelButton.addActionListener(e -> dialog.dispose());
 
-    buttonPanel.add(saveButton);
-    buttonPanel.add(cancelButton);
-
     dialog.add(formPanel, BorderLayout.CENTER);
-    dialog.add(buttonPanel, BorderLayout.SOUTH);
+    dialog.add(dialogButtonPanel, BorderLayout.SOUTH);
     dialog.pack();
     dialog.setLocationRelativeTo(this);
     dialog.setVisible(true);
-  }
-
-  private Visit getSelectedVisit() {
-    int row = visitTable.getSelectedRow();
-    if (row != -1) {
-      return new Visit(
-          LocalDate.parse((String) tableModel.getValueAt(row, 0), dateFormatter),
-          (String) tableModel.getValueAt(row, 1),
-          (String) tableModel.getValueAt(row, 2),
-          (String) tableModel.getValueAt(row, 3),
-          (String) tableModel.getValueAt(row, 4));
-    }
-    return null;
   }
 
   private void deleteSelectedVisit() {
@@ -193,16 +224,15 @@ public class VisitPanel extends JPanel {
               "Are you sure you want to delete this visit?",
               "Confirm Delete",
               JOptionPane.YES_NO_OPTION);
-
       if (result == JOptionPane.YES_OPTION) {
         try {
           LocalDate visitDate = LocalDate.parse(dateStr, dateFormatter);
           visitService.deleteVisit(patientId, doctorId, visitDate);
           loadVisits();
           JOptionPane.showMessageDialog(this, "Visit deleted successfully");
-        } catch (Exception e) {
+        } catch (Exception ex) {
           JOptionPane.showMessageDialog(
-              this, "Error deleting visit: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+              this, "Error deleting visit: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
       }
     } else {
@@ -210,23 +240,125 @@ public class VisitPanel extends JPanel {
     }
   }
 
-  private void loadVisits() {
-    try {
-      List<Visit> visits = visitService.getAllVisits();
-      tableModel.setRowCount(0);
-      for (Visit visit : visits) {
-        tableModel.addRow(
-            new Object[] {
-              visit.getDateOfVisit().format(dateFormatter),
-              visit.getSymptoms(),
-              visit.getDiagnosis(),
-              visit.getDoctorId(),
-              visit.getPatientId()
-            });
-      }
-    } catch (Exception e) {
-      JOptionPane.showMessageDialog(
-          this, "Error loading visits: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-    }
+  // Popup dialog for advanced filtering
+  private void showAdvancedFilterDialog() {
+    JDialog filterDialog =
+        new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Advanced Filter", true);
+    filterDialog.setLayout(new BorderLayout(10, 10));
+
+    // Form panel for entering advanced filter criteria
+    JPanel formPanel = new JPanel(new GridLayout(5, 2, 5, 5));
+    formPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+    JTextField filterDateField = new JTextField(20);
+    JTextField filterSymptomsField = new JTextField(20);
+    JTextField filterDiagnosisField = new JTextField(20);
+    JTextField filterDoctorIdField = new JTextField(20);
+    JTextField filterPatientIdField = new JTextField(20);
+
+    formPanel.add(new JLabel("Date contains:"));
+    formPanel.add(filterDateField);
+    formPanel.add(new JLabel("Symptoms contains:"));
+    formPanel.add(filterSymptomsField);
+    formPanel.add(new JLabel("Diagnosis contains:"));
+    formPanel.add(filterDiagnosisField);
+    formPanel.add(new JLabel("Doctor ID contains:"));
+    formPanel.add(filterDoctorIdField);
+    formPanel.add(new JLabel("Patient ID contains:"));
+    formPanel.add(filterPatientIdField);
+
+    // Button panel for filter actions (only Filter and Cancel buttons remain here)
+    JPanel filterButtonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+    JButton filterButton = new JButton("Filter");
+    JButton cancelButton = new JButton("Cancel");
+    filterButtonPanel.add(filterButton);
+    filterButtonPanel.add(cancelButton);
+
+    // Action for Filter button: apply filters based on criteria
+    filterButton.addActionListener(
+        e -> {
+          try {
+            List<Visit> visits = visitService.getAllVisits();
+
+            String dateFilter = filterDateField.getText().trim();
+            String symptomsFilter = filterSymptomsField.getText().trim();
+            String diagnosisFilter = filterDiagnosisField.getText().trim();
+            String doctorIdFilter = filterDoctorIdField.getText().trim();
+            String patientIdFilter = filterPatientIdField.getText().trim();
+
+            if (!dateFilter.isEmpty()) {
+              visits =
+                  visits.stream()
+                      .filter(
+                          visit ->
+                              visit
+                                  .getDateOfVisit()
+                                  .format(dateFormatter)
+                                  .toLowerCase()
+                                  .contains(dateFilter.toLowerCase()))
+                      .toList();
+            }
+            if (!symptomsFilter.isEmpty()) {
+              visits =
+                  visits.stream()
+                      .filter(
+                          visit ->
+                              visit
+                                  .getSymptoms()
+                                  .toLowerCase()
+                                  .contains(symptomsFilter.toLowerCase()))
+                      .toList();
+            }
+            if (!diagnosisFilter.isEmpty()) {
+              visits =
+                  visits.stream()
+                      .filter(
+                          visit ->
+                              visit
+                                  .getDiagnosis()
+                                  .toLowerCase()
+                                  .contains(diagnosisFilter.toLowerCase()))
+                      .toList();
+            }
+            if (!doctorIdFilter.isEmpty()) {
+              visits =
+                  visits.stream()
+                      .filter(
+                          visit ->
+                              visit
+                                  .getDoctorId()
+                                  .toLowerCase()
+                                  .contains(doctorIdFilter.toLowerCase()))
+                      .toList();
+            }
+            if (!patientIdFilter.isEmpty()) {
+              visits =
+                  visits.stream()
+                      .filter(
+                          visit ->
+                              visit
+                                  .getPatientId()
+                                  .toLowerCase()
+                                  .contains(patientIdFilter.toLowerCase()))
+                      .toList();
+            }
+            populateTable(visits);
+          } catch (Exception ex) {
+            JOptionPane.showMessageDialog(
+                this,
+                "Error filtering visits: " + ex.getMessage(),
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
+          }
+          filterDialog.dispose();
+        });
+
+    cancelButton.addActionListener(e -> filterDialog.dispose());
+
+    filterDialog.add(formPanel, BorderLayout.CENTER);
+    filterDialog.add(filterButtonPanel, BorderLayout.SOUTH);
+    filterDialog.pack();
+    filterDialog.setLocationRelativeTo(this);
+    filterDialog.setVisible(true);
   }
 }
