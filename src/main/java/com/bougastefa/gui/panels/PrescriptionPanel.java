@@ -2,249 +2,404 @@ package com.bougastefa.gui.panels;
 
 import com.bougastefa.models.Prescription;
 import com.bougastefa.services.PrescriptionService;
-import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
 
 public class PrescriptionPanel extends JPanel {
+  private PrescriptionService prescriptionService;
+  private DefaultTableModel tableModel;
+  private JTable prescriptionTable;
+  private final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-    private PrescriptionService prescriptionService;
-    private DefaultTableModel tableModel;
-    private JTable prescriptionTable;
-    private final DateTimeFormatter dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE;
+  public PrescriptionPanel() {
+    prescriptionService = new PrescriptionService();
+    setLayout(new BorderLayout());
 
-    public PrescriptionPanel() {
-        prescriptionService = new PrescriptionService();
-        setLayout(new BorderLayout());
+    // Top panel with three sections
+    JPanel topPanel = new JPanel(new BorderLayout());
 
-        String[] columnNames = {"ID", "Date", "Dosage", "Duration", "Comment", "Drug ID", "Doctor ID", "Patient ID"};
-        tableModel = new DefaultTableModel(columnNames, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return false;
-            }
+    // Left section: Advanced Filter and Clear Filters buttons
+    JPanel leftButtonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+    JButton advancedFilterButton = new JButton("Advanced Filter");
+    JButton clearFiltersButton = new JButton("Clear Filters");
+    leftButtonPanel.add(advancedFilterButton);
+    leftButtonPanel.add(clearFiltersButton);
+
+    // Center section: Add, Edit and Delete buttons
+    JPanel centerButtonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+    JButton addButton = new JButton("Add Prescription");
+    JButton editButton = new JButton("Edit Prescription");
+    JButton deleteButton = new JButton("Delete Prescription");
+    centerButtonPanel.add(addButton);
+    centerButtonPanel.add(editButton);
+    centerButtonPanel.add(deleteButton);
+
+    // Right section: Refresh button
+    JPanel rightButtonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+    JButton refreshButton = new JButton("Refresh");
+    rightButtonPanel.add(refreshButton);
+
+    topPanel.add(leftButtonPanel, BorderLayout.WEST);
+    topPanel.add(centerButtonPanel, BorderLayout.CENTER);
+    topPanel.add(rightButtonPanel, BorderLayout.EAST);
+    add(topPanel, BorderLayout.NORTH);
+
+    // Setup table for Prescriptions
+    String[] columnNames = {
+      "Prescription ID",
+      "Date",
+      "Drug ID",
+      "Doctor ID",
+      "Patient ID",
+      "Dosage",
+      "Duration",
+      "Comment"
+    };
+    tableModel =
+        new DefaultTableModel(columnNames, 0) {
+          @Override
+          public boolean isCellEditable(int row, int column) {
+            return false;
+          }
         };
-        
-        prescriptionTable = new JTable(tableModel);
-        prescriptionTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        prescriptionTable.getTableHeader().setReorderingAllowed(false);
-        
-        prescriptionTable.getColumnModel().getColumn(0).setPreferredWidth(50);
-        prescriptionTable.getColumnModel().getColumn(1).setPreferredWidth(100);
-        prescriptionTable.getColumnModel().getColumn(2).setPreferredWidth(70);
-        prescriptionTable.getColumnModel().getColumn(3).setPreferredWidth(70);
-        prescriptionTable.getColumnModel().getColumn(4).setPreferredWidth(200);
-        prescriptionTable.getColumnModel().getColumn(5).setPreferredWidth(70);
-        prescriptionTable.getColumnModel().getColumn(6).setPreferredWidth(70);
-        prescriptionTable.getColumnModel().getColumn(7).setPreferredWidth(70);
 
-        JScrollPane scrollPane = new JScrollPane(prescriptionTable);
-        add(scrollPane, BorderLayout.CENTER);
+    prescriptionTable = new JTable(tableModel);
+    prescriptionTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+    JScrollPane scrollPane = new JScrollPane(prescriptionTable);
+    add(scrollPane, BorderLayout.CENTER);
 
-        JPanel buttonPanel = new JPanel();
-        JButton addButton = new JButton("Add Prescription");
-        JButton editButton = new JButton("Edit");
-        JButton deleteButton = new JButton("Delete");
-        JButton refreshButton = new JButton("Refresh");
+    // Listeners for top buttons
+    refreshButton.addActionListener(e -> loadPrescriptions());
+    advancedFilterButton.addActionListener(e -> showAdvancedFilterDialog());
+    clearFiltersButton.addActionListener(e -> loadPrescriptions());
 
-        buttonPanel.add(addButton);
-        buttonPanel.add(editButton);
-        buttonPanel.add(deleteButton);
-        buttonPanel.add(refreshButton);
+    addButton.addActionListener(e -> showPrescriptionDialog(null));
+    editButton.addActionListener(
+        e -> {
+          Prescription selectedPrescription = getSelectedPrescription();
+          if (selectedPrescription != null) {
+            showPrescriptionDialog(selectedPrescription);
+          } else {
+            JOptionPane.showMessageDialog(this, "Please select a prescription to edit");
+          }
+        });
+    deleteButton.addActionListener(e -> deleteSelectedPrescription());
 
-        add(buttonPanel, BorderLayout.NORTH);
+    // Initial load of prescriptions
+    loadPrescriptions();
+  }
 
-        addButton.addActionListener(e -> showPrescriptionDialog(null));
-        editButton.addActionListener(e -> {
-            int row = prescriptionTable.getSelectedRow();
-            if (row != -1) {
-                showPrescriptionDialog(getSelectedPrescription());
+  private void loadPrescriptions() {
+    try {
+      List<Prescription> prescriptions = prescriptionService.getAllPrescriptions();
+      populateTable(prescriptions);
+    } catch (Exception ex) {
+      JOptionPane.showMessageDialog(
+          this,
+          "Error loading prescriptions: " + ex.getMessage(),
+          "Error",
+          JOptionPane.ERROR_MESSAGE);
+    }
+  }
+
+  private void populateTable(List<Prescription> prescriptions) {
+    tableModel.setRowCount(0);
+    for (Prescription prescription : prescriptions) {
+      tableModel.addRow(
+          new Object[] {
+            prescription.getPrescriptionId(),
+            prescription.getDateOfPrescribe().format(dateFormatter),
+            prescription.getDrugId(),
+            prescription.getDoctorId(),
+            prescription.getPatientId(),
+            prescription.getDosage(),
+            prescription.getDuration(),
+            prescription.getComment()
+          });
+    }
+  }
+
+  private Prescription getSelectedPrescription() {
+    int row = prescriptionTable.getSelectedRow();
+    if (row != -1) {
+      String prescriptionId = (String) tableModel.getValueAt(row, 0);
+      LocalDate date = LocalDate.parse((String) tableModel.getValueAt(row, 1), dateFormatter);
+      String drugId = (String) tableModel.getValueAt(row, 2);
+      String doctorId = (String) tableModel.getValueAt(row, 3);
+      String patientId = (String) tableModel.getValueAt(row, 4);
+      int dosage = (int) tableModel.getValueAt(row, 5);
+      int duration = (int) tableModel.getValueAt(row, 6);
+      String comment = (String) tableModel.getValueAt(row, 7);
+
+      return new Prescription(
+          prescriptionId, date, dosage, duration, comment, drugId, doctorId, patientId);
+    }
+    return null;
+  }
+
+  private void showPrescriptionDialog(Prescription existingPrescription) {
+    JDialog dialog =
+        new JDialog(
+            (Frame) SwingUtilities.getWindowAncestor(this),
+            existingPrescription == null ? "Add Prescription" : "Edit Prescription",
+            true);
+    dialog.setLayout(new BorderLayout(10, 10));
+
+    // Form panel for entering prescription details
+    JPanel formPanel = new JPanel(new GridLayout(8, 2, 5, 5));
+    formPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+    JTextField idField = new JTextField(20);
+    JTextField dateField = new JTextField(20);
+    JTextField drugIdField = new JTextField(20);
+    JTextField doctorIdField = new JTextField(20);
+    JTextField patientIdField = new JTextField(20);
+    JTextField dosageField = new JTextField(20);
+    JTextField durationField = new JTextField(20);
+    JTextField commentField = new JTextField(20);
+
+    if (existingPrescription != null) {
+      idField.setText(existingPrescription.getPrescriptionId());
+      idField.setEditable(false);
+      dateField.setText(existingPrescription.getDateOfPrescribe().format(dateFormatter));
+      drugIdField.setText(existingPrescription.getDrugId());
+      doctorIdField.setText(existingPrescription.getDoctorId());
+      patientIdField.setText(existingPrescription.getPatientId());
+      dosageField.setText(String.valueOf(existingPrescription.getDosage()));
+      durationField.setText(String.valueOf(existingPrescription.getDuration()));
+      commentField.setText(existingPrescription.getComment());
+    }
+
+    formPanel.add(new JLabel("Prescription ID:"));
+    formPanel.add(idField);
+    formPanel.add(new JLabel("Date (YYYY-MM-DD):"));
+    formPanel.add(dateField);
+    formPanel.add(new JLabel("Drug ID:"));
+    formPanel.add(drugIdField);
+    formPanel.add(new JLabel("Doctor ID:"));
+    formPanel.add(doctorIdField);
+    formPanel.add(new JLabel("Patient ID:"));
+    formPanel.add(patientIdField);
+    formPanel.add(new JLabel("Dosage:"));
+    formPanel.add(dosageField);
+    formPanel.add(new JLabel("Duration (days):"));
+    formPanel.add(durationField);
+    formPanel.add(new JLabel("Comment:"));
+    formPanel.add(commentField);
+
+    // Button panel for save and cancel
+    JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+    JButton saveButton = new JButton("Save");
+    JButton cancelButton = new JButton("Cancel");
+    buttonPanel.add(saveButton);
+    buttonPanel.add(cancelButton);
+
+    saveButton.addActionListener(
+        e -> {
+          try {
+            String id = idField.getText().trim();
+            String dateText = dateField.getText().trim();
+            String drugId = drugIdField.getText().trim();
+            String doctorId = doctorIdField.getText().trim();
+            String patientId = patientIdField.getText().trim();
+            String dosageText = dosageField.getText().trim();
+            String durationText = durationField.getText().trim();
+            String comment = commentField.getText().trim();
+
+            // Handle empty fields
+            LocalDate date =
+                dateText.isEmpty() ? LocalDate.now() : LocalDate.parse(dateText, dateFormatter);
+            int dosage = dosageText.isEmpty() ? 0 : Integer.parseInt(dosageText);
+            int duration = durationText.isEmpty() ? 0 : Integer.parseInt(durationText);
+
+            Prescription prescription =
+                new Prescription(id, date, dosage, duration, comment, drugId, doctorId, patientId);
+
+            if (existingPrescription == null) {
+              prescriptionService.addPrescription(prescription);
+              JOptionPane.showMessageDialog(this, "Prescription added successfully");
             } else {
-                JOptionPane.showMessageDialog(this, "Please select a prescription to edit");
+              prescriptionService.updatePrescription(prescription);
+              JOptionPane.showMessageDialog(this, "Prescription updated successfully");
             }
+            loadPrescriptions();
+            dialog.dispose();
+          } catch (DateTimeParseException dtpe) {
+            JOptionPane.showMessageDialog(
+                this,
+                "Please enter the date in YYYY-MM-DD format or leave it empty for today's date",
+                "Invalid Date Format",
+                JOptionPane.ERROR_MESSAGE);
+          } catch (NumberFormatException nfe) {
+            JOptionPane.showMessageDialog(
+                this,
+                "Please enter valid numbers for dosage and duration or leave them empty",
+                "Invalid Number Format",
+                JOptionPane.ERROR_MESSAGE);
+          } catch (Exception ex) {
+            JOptionPane.showMessageDialog(
+                this, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+          }
         });
-        deleteButton.addActionListener(e -> deleteSelectedPrescription());
-        refreshButton.addActionListener(e -> loadPrescriptions());
+    cancelButton.addActionListener(e -> dialog.dispose());
 
-        loadPrescriptions();
-    }
+    dialog.add(formPanel, BorderLayout.CENTER);
+    dialog.add(buttonPanel, BorderLayout.SOUTH);
+    dialog.pack();
+    dialog.setLocationRelativeTo(this);
+    dialog.setVisible(true);
+  }
 
-    private void showPrescriptionDialog(Prescription existingPrescription) {
-        JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), 
-                                   existingPrescription == null ? "Add Prescription" : "Edit Prescription", 
-                                   true);
-        dialog.setLayout(new BorderLayout(10, 10));
-
-        JPanel formPanel = new JPanel(new GridLayout(8, 2, 5, 5));
-        formPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-
-        JTextField idField = new JTextField(20);
-        JTextField dateField = new JTextField(20);
-        JTextField dosageField = new JTextField(20);
-        JTextField durationField = new JTextField(20);
-        JTextField commentField = new JTextField(20);
-        JTextField drugIdField = new JTextField(20);
-        JTextField doctorIdField = new JTextField(20);
-        JTextField patientIdField = new JTextField(20);
-
-        if (existingPrescription != null) {
-            idField.setText(existingPrescription.getPrescriptionId());
-            idField.setEditable(false);
-            dateField.setText(existingPrescription.getDateOfPrescribe().format(dateFormatter));
-            dosageField.setText(String.valueOf(existingPrescription.getDosage()));
-            durationField.setText(String.valueOf(existingPrescription.getDuration()));
-            commentField.setText(existingPrescription.getComment());
-            drugIdField.setText(existingPrescription.getDrugId());
-            doctorIdField.setText(existingPrescription.getDoctorId());
-            patientIdField.setText(existingPrescription.getPatientId());
-        }
-
-        formPanel.add(new JLabel("ID:"));
-        formPanel.add(idField);
-        formPanel.add(new JLabel("Date (YYYY-MM-DD):"));
-        formPanel.add(dateField);
-        formPanel.add(new JLabel("Dosage:"));
-        formPanel.add(dosageField);
-        formPanel.add(new JLabel("Duration (days):"));
-        formPanel.add(durationField);
-        formPanel.add(new JLabel("Comment:"));
-        formPanel.add(commentField);
-        formPanel.add(new JLabel("Drug ID:"));
-        formPanel.add(drugIdField);
-        formPanel.add(new JLabel("Doctor ID:"));
-        formPanel.add(doctorIdField);
-        formPanel.add(new JLabel("Patient ID:"));
-        formPanel.add(patientIdField);
-
-        JPanel buttonPanel = new JPanel();
-        JButton saveButton = new JButton("Save");
-        JButton cancelButton = new JButton("Cancel");
-
-        saveButton.addActionListener(e -> {
-            try {
-                LocalDate prescribedDate = LocalDate.parse(dateField.getText(), dateFormatter);
-                int dosage = Integer.parseInt(dosageField.getText());
-                int duration = Integer.parseInt(durationField.getText());
-                
-                Prescription prescription = new Prescription(
-                    idField.getText(),
-                    prescribedDate,
-                    dosage,
-                    duration,
-                    commentField.getText(),
-                    drugIdField.getText(),
-                    doctorIdField.getText(),
-                    patientIdField.getText()
-                );
-                
-                if (existingPrescription == null) {
-                    prescriptionService.addPrescription(prescription);
-                } else {
-                    prescriptionService.updatePrescription(prescription);
-                }
-                
-                loadPrescriptions();
-                dialog.dispose();
-                JOptionPane.showMessageDialog(this, 
-                    existingPrescription == null ? "Prescription added successfully" : "Prescription updated successfully");
-            } catch (DateTimeParseException dtpe) {
-                JOptionPane.showMessageDialog(this,
-                    "Invalid date format. Please use YYYY-MM-DD format.",
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE);
-            } catch (NumberFormatException nfe) {
-                JOptionPane.showMessageDialog(this,
-                    "Invalid number format for dosage or duration. Please enter valid numbers.",
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE);
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this,
-                    "Error: " + ex.getMessage(),
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE);
-            }
-        });
-
-        cancelButton.addActionListener(e -> dialog.dispose());
-
-        buttonPanel.add(saveButton);
-        buttonPanel.add(cancelButton);
-
-        dialog.add(formPanel, BorderLayout.CENTER);
-        dialog.add(buttonPanel, BorderLayout.SOUTH);
-        dialog.pack();
-        dialog.setLocationRelativeTo(this);
-        dialog.setVisible(true);
-    }
-
-    private Prescription getSelectedPrescription() {
-        int row = prescriptionTable.getSelectedRow();
-        if (row != -1) {
-            return new Prescription(
-                (String) tableModel.getValueAt(row, 0),  // ID
-                LocalDate.parse((String) tableModel.getValueAt(row, 1), dateFormatter),  // Date
-                Integer.parseInt(tableModel.getValueAt(row, 2).toString()),  // Dosage
-                Integer.parseInt(tableModel.getValueAt(row, 3).toString()),  // Duration
-                (String) tableModel.getValueAt(row, 4),  // Comment
-                (String) tableModel.getValueAt(row, 5),  // Drug ID
-                (String) tableModel.getValueAt(row, 6),  // Doctor ID
-                (String) tableModel.getValueAt(row, 7)   // Patient ID
-            );
-        }
-        return null;
-    }
-
-    private void deleteSelectedPrescription() {
-        int row = prescriptionTable.getSelectedRow();
-        if (row != -1) {
-            String id = (String) tableModel.getValueAt(row, 0);
-            int result = JOptionPane.showConfirmDialog(this,
-                "Are you sure you want to delete this prescription?",
-                "Confirm Delete",
-                JOptionPane.YES_NO_OPTION);
-            
-            if (result == JOptionPane.YES_OPTION) {
-                try {
-                    prescriptionService.deletePrescription(id);
-                    loadPrescriptions();
-                    JOptionPane.showMessageDialog(this, "Prescription deleted successfully");
-                } catch (Exception e) {
-                    JOptionPane.showMessageDialog(this,
-                        "Error deleting prescription: " + e.getMessage(),
-                        "Error",
-                        JOptionPane.ERROR_MESSAGE);
-                }
-            }
-        } else {
-            JOptionPane.showMessageDialog(this, "Please select a prescription to delete");
-        }
-    }
-
-    private void loadPrescriptions() {
+  private void deleteSelectedPrescription() {
+    int row = prescriptionTable.getSelectedRow();
+    if (row != -1) {
+      String prescriptionId = (String) tableModel.getValueAt(row, 0);
+      int result =
+          JOptionPane.showConfirmDialog(
+              this,
+              "Are you sure you want to delete this prescription?",
+              "Confirm Delete",
+              JOptionPane.YES_NO_OPTION);
+      if (result == JOptionPane.YES_OPTION) {
         try {
+          prescriptionService.deletePrescription(prescriptionId);
+          loadPrescriptions();
+          JOptionPane.showMessageDialog(this, "Prescription deleted successfully");
+        } catch (Exception ex) {
+          JOptionPane.showMessageDialog(
+              this,
+              "Error deleting prescription: " + ex.getMessage(),
+              "Error",
+              JOptionPane.ERROR_MESSAGE);
+        }
+      }
+    } else {
+      JOptionPane.showMessageDialog(this, "Please select a prescription to delete");
+    }
+  }
+
+  private void showAdvancedFilterDialog() {
+    JDialog filterDialog =
+        new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Advanced Filter", true);
+    filterDialog.setLayout(new BorderLayout(10, 10));
+
+    JPanel formPanel = new JPanel(new GridLayout(8, 2, 5, 5));
+    formPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+    JTextField filterIdField = new JTextField(20);
+    JTextField filterDateField = new JTextField(20);
+    JTextField filterDrugIdField = new JTextField(20);
+    JTextField filterDoctorIdField = new JTextField(20);
+    JTextField filterPatientIdField = new JTextField(20);
+    JTextField filterDosageField = new JTextField(20);
+    JTextField filterDurationField = new JTextField(20);
+    JTextField filterCommentField = new JTextField(20);
+
+    formPanel.add(new JLabel("Prescription ID contains:"));
+    formPanel.add(filterIdField);
+    formPanel.add(new JLabel("Date contains:"));
+    formPanel.add(filterDateField);
+    formPanel.add(new JLabel("Drug ID contains:"));
+    formPanel.add(filterDrugIdField);
+    formPanel.add(new JLabel("Doctor ID contains:"));
+    formPanel.add(filterDoctorIdField);
+    formPanel.add(new JLabel("Patient ID contains:"));
+    formPanel.add(filterPatientIdField);
+    formPanel.add(new JLabel("Dosage contains:"));
+    formPanel.add(filterDosageField);
+    formPanel.add(new JLabel("Duration contains:"));
+    formPanel.add(filterDurationField);
+    formPanel.add(new JLabel("Comment contains:"));
+    formPanel.add(filterCommentField);
+
+    JPanel filterButtonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+    JButton filterButton = new JButton("Filter");
+    JButton cancelButton = new JButton("Cancel");
+    filterButtonPanel.add(filterButton);
+    filterButtonPanel.add(cancelButton);
+
+    filterButton.addActionListener(
+        e -> {
+          try {
             List<Prescription> prescriptions = prescriptionService.getAllPrescriptions();
-            tableModel.setRowCount(0);
-            for (Prescription prescription : prescriptions) {
-                tableModel.addRow(new Object[]{
-                    prescription.getPrescriptionId(),
-                    prescription.getDateOfPrescribe().format(dateFormatter),
-                    prescription.getDosage(),
-                    prescription.getDuration(),
-                    prescription.getComment(),
-                    prescription.getDrugId(),  
-                    prescription.getDoctorId(),
-                    prescription.getPatientId()
-                });
-            }
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this,
-                "Error loading prescriptions: " + e.getMessage(),
+
+            String idFilter = filterIdField.getText().trim();
+            String dateFilter = filterDateField.getText().trim();
+            String drugIdFilter = filterDrugIdField.getText().trim();
+            String doctorIdFilter = filterDoctorIdField.getText().trim();
+            String patientIdFilter = filterPatientIdField.getText().trim();
+            String dosageFilter = filterDosageField.getText().trim();
+            String durationFilter = filterDurationField.getText().trim();
+            String commentFilter = filterCommentField.getText().trim();
+
+            prescriptions =
+                prescriptions.stream()
+                    .filter(
+                        p ->
+                            idFilter.isEmpty()
+                                || p.getPrescriptionId()
+                                    .toLowerCase()
+                                    .contains(idFilter.toLowerCase()))
+                    .filter(
+                        p ->
+                            dateFilter.isEmpty()
+                                || p.getDateOfPrescribe()
+                                    .format(dateFormatter)
+                                    .contains(dateFilter))
+                    .filter(
+                        p ->
+                            drugIdFilter.isEmpty()
+                                || p.getDrugId().toLowerCase().contains(drugIdFilter.toLowerCase()))
+                    .filter(
+                        p ->
+                            doctorIdFilter.isEmpty()
+                                || p.getDoctorId()
+                                    .toLowerCase()
+                                    .contains(doctorIdFilter.toLowerCase()))
+                    .filter(
+                        p ->
+                            patientIdFilter.isEmpty()
+                                || p.getPatientId()
+                                    .toLowerCase()
+                                    .contains(patientIdFilter.toLowerCase()))
+                    .filter(
+                        p ->
+                            dosageFilter.isEmpty()
+                                || String.valueOf(p.getDosage()).contains(dosageFilter))
+                    .filter(
+                        p ->
+                            durationFilter.isEmpty()
+                                || String.valueOf(p.getDuration()).contains(durationFilter))
+                    .filter(
+                        p ->
+                            commentFilter.isEmpty()
+                                || p.getComment()
+                                    .toLowerCase()
+                                    .contains(commentFilter.toLowerCase()))
+                    .toList();
+
+            populateTable(prescriptions);
+          } catch (Exception ex) {
+            JOptionPane.showMessageDialog(
+                this,
+                "Error filtering prescriptions: " + ex.getMessage(),
                 "Error",
                 JOptionPane.ERROR_MESSAGE);
-        }
-    }
+          }
+          filterDialog.dispose();
+        });
+
+    cancelButton.addActionListener(e -> filterDialog.dispose());
+
+    filterDialog.add(formPanel, BorderLayout.CENTER);
+    filterDialog.add(filterButtonPanel, BorderLayout.SOUTH);
+    filterDialog.pack();
+    filterDialog.setLocationRelativeTo(this);
+    filterDialog.setVisible(true);
+  }
 }
