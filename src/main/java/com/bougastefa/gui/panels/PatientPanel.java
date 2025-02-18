@@ -16,7 +16,10 @@ public class PatientPanel extends JPanel {
     patientService = new PatientService();
     setLayout(new BorderLayout());
 
-    // Top panel with three sections
+    // Top panel with three sections:
+    // Left: Advanced Filter and Clear Filters buttons.
+    // Center: Add, Edit, Delete buttons.
+    // Right: Refresh button.
     JPanel topPanel = new JPanel(new BorderLayout());
 
     // Left section: Advanced Filter and Clear Filters buttons
@@ -47,7 +50,7 @@ public class PatientPanel extends JPanel {
 
     // Setup table for Patients
     String[] columnNames = {
-      "Patient ID", "First Name", "Surname", "Postcode", "Address", "Email", "Phone"
+      "Patient ID", "First Name", "Surname", "Postcode", "Address", "Phone", "Email"
     };
     tableModel =
         new DefaultTableModel(columnNames, 0) {
@@ -119,7 +122,6 @@ public class PatientPanel extends JPanel {
       String address = (String) tableModel.getValueAt(row, 4);
       String email = (String) tableModel.getValueAt(row, 5);
       String phone = (String) tableModel.getValueAt(row, 6);
-
       return new Patient(patientId, firstName, surname, postcode, address, email, phone);
     }
     return null;
@@ -141,7 +143,8 @@ public class PatientPanel extends JPanel {
     JTextField firstNameField = new JTextField(20);
     JTextField surnameField = new JTextField(20);
     JTextField postcodeField = new JTextField(20);
-    JTextField addressField = new JTextField(20);
+    JTextArea addressField = new JTextArea(3, 20); // Changed to JTextArea for consistency
+    JScrollPane addressScroll = new JScrollPane(addressField);
     JTextField emailField = new JTextField(20);
     JTextField phoneField = new JTextField(20);
 
@@ -156,20 +159,20 @@ public class PatientPanel extends JPanel {
       phoneField.setText(existingPatient.getPhone());
     }
 
-    formPanel.add(new JLabel("Patient ID:"));
-    formPanel.add(idField);
-    formPanel.add(new JLabel("First Name:"));
-    formPanel.add(firstNameField);
-    formPanel.add(new JLabel("Surname:"));
-    formPanel.add(surnameField);
-    formPanel.add(new JLabel("Postcode:"));
-    formPanel.add(postcodeField);
-    formPanel.add(new JLabel("Address:"));
-    formPanel.add(addressField);
-    formPanel.add(new JLabel("Email:"));
-    formPanel.add(emailField);
-    formPanel.add(new JLabel("Phone:"));
-    formPanel.add(phoneField);
+    // Adjust layout for address field
+    formPanel.setLayout(new GridBagLayout());
+    GridBagConstraints gbc = new GridBagConstraints();
+    gbc.fill = GridBagConstraints.HORIZONTAL;
+    gbc.insets = new Insets(2, 2, 2, 2);
+
+    // Add components with proper constraints
+    addFormField(formPanel, "Patient ID:", idField, gbc, 0);
+    addFormField(formPanel, "First Name:", firstNameField, gbc, 1);
+    addFormField(formPanel, "Surname:", surnameField, gbc, 2);
+    addFormField(formPanel, "Postcode:", postcodeField, gbc, 3);
+    addFormField(formPanel, "Address:", addressScroll, gbc, 4);
+    addFormField(formPanel, "Email:", emailField, gbc, 5);
+    addFormField(formPanel, "Phone:", phoneField, gbc, 6);
 
     // Button panel for save and cancel
     JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
@@ -215,6 +218,18 @@ public class PatientPanel extends JPanel {
     dialog.setVisible(true);
   }
 
+  private void addFormField(
+      JPanel panel, String label, JComponent field, GridBagConstraints gbc, int row) {
+    gbc.gridx = 0;
+    gbc.gridy = row;
+    gbc.weightx = 0;
+    panel.add(new JLabel(label), gbc);
+
+    gbc.gridx = 1;
+    gbc.weightx = 1;
+    panel.add(field, gbc);
+  }
+
   private void deleteSelectedPatient() {
     int row = patientTable.getSelectedRow();
     if (row != -1) {
@@ -248,6 +263,7 @@ public class PatientPanel extends JPanel {
         new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Advanced Filter", true);
     filterDialog.setLayout(new BorderLayout(10, 10));
 
+    // Form panel for filter criteria
     JPanel formPanel = new JPanel(new GridLayout(7, 2, 5, 5));
     formPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
@@ -269,9 +285,9 @@ public class PatientPanel extends JPanel {
     formPanel.add(filterPostcodeField);
     formPanel.add(new JLabel("Address contains:"));
     formPanel.add(filterAddressField);
-    formPanel.add(new JLabel("Email contains:"));
-    formPanel.add(filterEmailField);
     formPanel.add(new JLabel("Phone contains:"));
+    formPanel.add(filterEmailField);
+    formPanel.add(new JLabel("Email contains:"));
     formPanel.add(filterPhoneField);
 
     JPanel filterButtonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
@@ -293,45 +309,74 @@ public class PatientPanel extends JPanel {
             String emailFilter = filterEmailField.getText().trim();
             String phoneFilter = filterPhoneField.getText().trim();
 
-            patients =
-                patients.stream()
-                    .filter(
-                        p ->
-                            idFilter.isEmpty()
-                                || p.getPatientId().toLowerCase().contains(idFilter.toLowerCase()))
-                    .filter(
-                        p ->
-                            firstNameFilter.isEmpty()
-                                || p.getFirstName()
-                                    .toLowerCase()
-                                    .contains(firstNameFilter.toLowerCase()))
-                    .filter(
-                        p ->
-                            surnameFilter.isEmpty()
-                                || p.getSurname()
-                                    .toLowerCase()
-                                    .contains(surnameFilter.toLowerCase()))
-                    .filter(
-                        p ->
-                            postcodeFilter.isEmpty()
-                                || p.getPostcode()
-                                    .toLowerCase()
-                                    .contains(postcodeFilter.toLowerCase()))
-                    .filter(
-                        p ->
-                            addressFilter.isEmpty()
-                                || p.getAddress()
-                                    .toLowerCase()
-                                    .contains(addressFilter.toLowerCase()))
-                    .filter(
-                        p ->
-                            emailFilter.isEmpty()
-                                || p.getEmail().toLowerCase().contains(emailFilter.toLowerCase()))
-                    .filter(
-                        p ->
-                            phoneFilter.isEmpty()
-                                || p.getPhone().toLowerCase().contains(phoneFilter.toLowerCase()))
-                    .toList();
+            if (!idFilter.isEmpty()) {
+              patients =
+                  patients.stream()
+                      .filter(
+                          patient ->
+                              patient.getPatientId().toLowerCase().contains(idFilter.toLowerCase()))
+                      .toList();
+            }
+            if (!firstNameFilter.isEmpty()) {
+              patients =
+                  patients.stream()
+                      .filter(
+                          patient ->
+                              patient
+                                  .getFirstName()
+                                  .toLowerCase()
+                                  .contains(firstNameFilter.toLowerCase()))
+                      .toList();
+            }
+            if (!surnameFilter.isEmpty()) {
+              patients =
+                  patients.stream()
+                      .filter(
+                          patient ->
+                              patient
+                                  .getSurname()
+                                  .toLowerCase()
+                                  .contains(surnameFilter.toLowerCase()))
+                      .toList();
+            }
+            if (!postcodeFilter.isEmpty()) {
+              patients =
+                  patients.stream()
+                      .filter(
+                          patient ->
+                              patient
+                                  .getPostcode()
+                                  .toLowerCase()
+                                  .contains(postcodeFilter.toLowerCase()))
+                      .toList();
+            }
+            if (!addressFilter.isEmpty()) {
+              patients =
+                  patients.stream()
+                      .filter(
+                          patient ->
+                              patient
+                                  .getAddress()
+                                  .toLowerCase()
+                                  .contains(addressFilter.toLowerCase()))
+                      .toList();
+            }
+            if (!emailFilter.isEmpty()) {
+              patients =
+                  patients.stream()
+                      .filter(
+                          patient ->
+                              patient.getEmail().toLowerCase().contains(emailFilter.toLowerCase()))
+                      .toList();
+            }
+            if (!phoneFilter.isEmpty()) {
+              patients =
+                  patients.stream()
+                      .filter(
+                          patient ->
+                              patient.getPhone().toLowerCase().contains(phoneFilter.toLowerCase()))
+                      .toList();
+            }
 
             populateTable(patients);
           } catch (Exception ex) {
