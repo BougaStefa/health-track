@@ -1,25 +1,26 @@
 package com.bougastefa.gui.panels;
 
+import com.bougastefa.models.Doctor;
 import com.bougastefa.models.Patient;
+import com.bougastefa.services.DoctorService;
 import com.bougastefa.services.PatientService;
+import com.bougastefa.services.VisitService;
 import java.awt.*;
 import java.util.List;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 
 public class PatientPanel extends JPanel {
-  private PatientService patientService;
+  private final PatientService patientService = new PatientService();
+  private final DoctorService doctorService = new DoctorService();
+  private final VisitService visitService = new VisitService();
   private DefaultTableModel tableModel;
   private JTable patientTable;
 
   public PatientPanel() {
-    patientService = new PatientService();
     setLayout(new BorderLayout());
 
-    // Top panel with three sections:
-    // Left: Advanced Filter and Clear Filters buttons.
-    // Center: Add, Edit, Delete buttons.
-    // Right: Refresh button.
+    // Top panel with three sections
     JPanel topPanel = new JPanel(new BorderLayout());
 
     // Left section: Advanced Filter and Clear Filters buttons
@@ -29,14 +30,16 @@ public class PatientPanel extends JPanel {
     leftButtonPanel.add(advancedFilterButton);
     leftButtonPanel.add(clearFiltersButton);
 
-    // Center section: Add, Edit and Delete buttons
+    // Center section: Add, Edit, Delete and Primary Doctor buttons
     JPanel centerButtonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
     JButton addButton = new JButton("Add Patient");
     JButton editButton = new JButton("Edit Patient");
     JButton deleteButton = new JButton("Delete Patient");
+    JButton primaryDoctorButton = new JButton("Primary Doctor");
     centerButtonPanel.add(addButton);
     centerButtonPanel.add(editButton);
     centerButtonPanel.add(deleteButton);
+    centerButtonPanel.add(primaryDoctorButton);
 
     // Right section: Refresh button
     JPanel rightButtonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
@@ -81,6 +84,7 @@ public class PatientPanel extends JPanel {
           }
         });
     deleteButton.addActionListener(e -> deleteSelectedPatient());
+    primaryDoctorButton.addActionListener(e -> showPrimaryDoctorDetails());
 
     // Initial load of patients
     loadPatients();
@@ -136,15 +140,17 @@ public class PatientPanel extends JPanel {
     dialog.setLayout(new BorderLayout(10, 10));
 
     // Form panel for entering patient details
-    JPanel formPanel = new JPanel(new GridLayout(7, 2, 5, 5));
+    JPanel formPanel = new JPanel(new GridBagLayout());
     formPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+    GridBagConstraints gbc = new GridBagConstraints();
+    gbc.fill = GridBagConstraints.HORIZONTAL;
+    gbc.insets = new Insets(5, 5, 5, 5);
 
     JTextField idField = new JTextField(20);
     JTextField firstNameField = new JTextField(20);
     JTextField surnameField = new JTextField(20);
     JTextField postcodeField = new JTextField(20);
-    JTextArea addressField = new JTextArea(3, 20); // Changed to JTextArea for consistency
-    JScrollPane addressScroll = new JScrollPane(addressField);
+    JTextField addressField = new JTextField(20);
     JTextField emailField = new JTextField(20);
     JTextField phoneField = new JTextField(20);
 
@@ -159,18 +165,11 @@ public class PatientPanel extends JPanel {
       phoneField.setText(existingPatient.getPhone());
     }
 
-    // Adjust layout for address field
-    formPanel.setLayout(new GridBagLayout());
-    GridBagConstraints gbc = new GridBagConstraints();
-    gbc.fill = GridBagConstraints.HORIZONTAL;
-    gbc.insets = new Insets(2, 2, 2, 2);
-
-    // Add components with proper constraints
     addFormField(formPanel, "Patient ID:", idField, gbc, 0);
     addFormField(formPanel, "First Name:", firstNameField, gbc, 1);
     addFormField(formPanel, "Surname:", surnameField, gbc, 2);
     addFormField(formPanel, "Postcode:", postcodeField, gbc, 3);
-    addFormField(formPanel, "Address:", addressScroll, gbc, 4);
+    addFormField(formPanel, "Address:", addressField, gbc, 4);
     addFormField(formPanel, "Email:", emailField, gbc, 5);
     addFormField(formPanel, "Phone:", phoneField, gbc, 6);
 
@@ -186,14 +185,13 @@ public class PatientPanel extends JPanel {
           try {
             Patient patient =
                 new Patient(
-                    idField.getText().trim(),
-                    firstNameField.getText().trim(),
-                    surnameField.getText().trim(),
-                    postcodeField.getText().trim(),
-                    addressField.getText().trim(),
-                    emailField.getText().trim(),
-                    phoneField.getText().trim());
-
+                    idField.getText(),
+                    firstNameField.getText(),
+                    surnameField.getText(),
+                    postcodeField.getText(),
+                    addressField.getText(),
+                    emailField.getText(),
+                    phoneField.getText());
             if (existingPatient == null) {
               patientService.addPatient(patient);
               JOptionPane.showMessageDialog(this, "Patient added successfully");
@@ -258,6 +256,71 @@ public class PatientPanel extends JPanel {
     }
   }
 
+  private void showPrimaryDoctorDetails() {
+    Patient selectedPatient = getSelectedPatient();
+    if (selectedPatient == null) {
+      JOptionPane.showMessageDialog(this, "Please select a patient first");
+      return;
+    }
+
+    String primaryDoctorId = visitService.getPrimaryDoctorId(selectedPatient.getPatientId());
+    if (primaryDoctorId == null) {
+      JOptionPane.showMessageDialog(
+          this,
+          "No primary doctor found. The patient has no recorded visits.",
+          "No Primary Doctor",
+          JOptionPane.INFORMATION_MESSAGE);
+      return;
+    }
+
+    Doctor primaryDoctor = doctorService.getDoctorById(primaryDoctorId);
+    if (primaryDoctor == null) {
+      JOptionPane.showMessageDialog(
+          this, "Error: Could not find doctor details", "Error", JOptionPane.ERROR_MESSAGE);
+      return;
+    }
+
+    // Create and show the doctor details dialog
+    JDialog dialog =
+        new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Primary Doctor Details", true);
+    dialog.setLayout(new BorderLayout(10, 10));
+
+    // Create panel for doctor details
+    JPanel detailsPanel = new JPanel(new GridLayout(6, 2, 5, 5));
+    detailsPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+    // Add doctor details
+    detailsPanel.add(new JLabel("Doctor ID:"));
+    detailsPanel.add(new JLabel(primaryDoctor.getDoctorId()));
+
+    detailsPanel.add(new JLabel("First Name:"));
+    detailsPanel.add(new JLabel(primaryDoctor.getFirstName()));
+
+    detailsPanel.add(new JLabel("Surname:"));
+    detailsPanel.add(new JLabel(primaryDoctor.getSurname()));
+
+    detailsPanel.add(new JLabel("Address:"));
+    detailsPanel.add(new JLabel(primaryDoctor.getAddress()));
+
+    detailsPanel.add(new JLabel("Email:"));
+    detailsPanel.add(new JLabel(primaryDoctor.getEmail()));
+
+    detailsPanel.add(new JLabel("Hospital:"));
+    detailsPanel.add(new JLabel(primaryDoctor.getHospital()));
+
+    // Add close button
+    JButton closeButton = new JButton("Close");
+    closeButton.addActionListener(e -> dialog.dispose());
+    JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+    buttonPanel.add(closeButton);
+
+    dialog.add(detailsPanel, BorderLayout.CENTER);
+    dialog.add(buttonPanel, BorderLayout.SOUTH);
+    dialog.pack();
+    dialog.setLocationRelativeTo(this);
+    dialog.setVisible(true);
+  }
+
   private void showAdvancedFilterDialog() {
     JDialog filterDialog =
         new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Advanced Filter", true);
@@ -309,84 +372,56 @@ public class PatientPanel extends JPanel {
             String emailFilter = filterEmailField.getText().trim();
             String phoneFilter = filterPhoneField.getText().trim();
 
-            if (!idFilter.isEmpty()) {
-              patients =
-                  patients.stream()
-                      .filter(
-                          patient ->
-                              patient.getPatientId().toLowerCase().contains(idFilter.toLowerCase()))
-                      .toList();
-            }
-            if (!firstNameFilter.isEmpty()) {
-              patients =
-                  patients.stream()
-                      .filter(
-                          patient ->
-                              patient
-                                  .getFirstName()
-                                  .toLowerCase()
-                                  .contains(firstNameFilter.toLowerCase()))
-                      .toList();
-            }
-            if (!surnameFilter.isEmpty()) {
-              patients =
-                  patients.stream()
-                      .filter(
-                          patient ->
-                              patient
-                                  .getSurname()
-                                  .toLowerCase()
-                                  .contains(surnameFilter.toLowerCase()))
-                      .toList();
-            }
-            if (!postcodeFilter.isEmpty()) {
-              patients =
-                  patients.stream()
-                      .filter(
-                          patient ->
-                              patient
-                                  .getPostcode()
-                                  .toLowerCase()
-                                  .contains(postcodeFilter.toLowerCase()))
-                      .toList();
-            }
-            if (!addressFilter.isEmpty()) {
-              patients =
-                  patients.stream()
-                      .filter(
-                          patient ->
-                              patient
-                                  .getAddress()
-                                  .toLowerCase()
-                                  .contains(addressFilter.toLowerCase()))
-                      .toList();
-            }
-            if (!emailFilter.isEmpty()) {
-              patients =
-                  patients.stream()
-                      .filter(
-                          patient ->
-                              patient.getEmail().toLowerCase().contains(emailFilter.toLowerCase()))
-                      .toList();
-            }
-            if (!phoneFilter.isEmpty()) {
-              patients =
-                  patients.stream()
-                      .filter(
-                          patient ->
-                              patient.getPhone().toLowerCase().contains(phoneFilter.toLowerCase()))
-                      .toList();
-            }
+            // Apply filters
+            patients =
+                patients.stream()
+                    .filter(
+                        p ->
+                            idFilter.isEmpty()
+                                || p.getPatientId().toLowerCase().contains(idFilter.toLowerCase()))
+                    .filter(
+                        p ->
+                            firstNameFilter.isEmpty()
+                                || p.getFirstName()
+                                    .toLowerCase()
+                                    .contains(firstNameFilter.toLowerCase()))
+                    .filter(
+                        p ->
+                            surnameFilter.isEmpty()
+                                || p.getSurname()
+                                    .toLowerCase()
+                                    .contains(surnameFilter.toLowerCase()))
+                    .filter(
+                        p ->
+                            postcodeFilter.isEmpty()
+                                || p.getPostcode()
+                                    .toLowerCase()
+                                    .contains(postcodeFilter.toLowerCase()))
+                    .filter(
+                        p ->
+                            addressFilter.isEmpty()
+                                || p.getAddress()
+                                    .toLowerCase()
+                                    .contains(addressFilter.toLowerCase()))
+                    .filter(
+                        p ->
+                            emailFilter.isEmpty()
+                                || p.getEmail().toLowerCase().contains(emailFilter.toLowerCase()))
+                    .filter(
+                        p ->
+                            phoneFilter.isEmpty()
+                                || p.getPhone().toLowerCase().contains(phoneFilter.toLowerCase()))
+                    .toList();
 
             populateTable(patients);
+            filterDialog.dispose();
           } catch (Exception ex) {
             JOptionPane.showMessageDialog(
                 this,
-                "Error filtering patients: " + ex.getMessage(),
+                "Error applying filters: " + ex.getMessage(),
                 "Error",
                 JOptionPane.ERROR_MESSAGE);
           }
-          filterDialog.dispose();
         });
 
     cancelButton.addActionListener(e -> filterDialog.dispose());

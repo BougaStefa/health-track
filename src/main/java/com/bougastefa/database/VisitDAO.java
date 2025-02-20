@@ -95,4 +95,28 @@ public class VisitDAO {
       stmt.executeUpdate();
     }
   }
+
+  // Find Primary Doctor based on amount of visit for patient
+  public String getPrimaryDoctorId(String patientId) throws SQLException {
+    String sql =
+        """
+            SELECT doctorID, COUNT(*) as visit_count
+            FROM Visit
+            WHERE patientID = ?
+            GROUP BY doctorID
+            ORDER BY visit_count DESC
+            LIMIT 1
+        """;
+
+    try (Connection conn = DatabaseConnection.getConnection();
+        PreparedStatement stmt = conn.prepareStatement(sql)) {
+      stmt.setString(1, patientId);
+      try (ResultSet rs = stmt.executeQuery()) {
+        if (rs.next()) {
+          return rs.getString("doctorID");
+        }
+      }
+    }
+    return null;
+  }
 }
