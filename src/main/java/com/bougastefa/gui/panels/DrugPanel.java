@@ -31,16 +31,19 @@ public class DrugPanel extends JPanel {
     JButton editButton = new JButton("Edit Drug");
     JButton deleteButton = new JButton("Delete Drug");
     JButton filterButton = new JButton("Advanced Filter");
+    JButton refreshButton = new JButton("Refresh");
 
     addButton.addActionListener(e -> showDrugDialog(null));
     editButton.addActionListener(e -> editSelectedDrug());
     deleteButton.addActionListener(e -> deleteSelectedDrug());
     filterButton.addActionListener(e -> showAdvancedFilterDialog());
+    refreshButton.addActionListener(e -> loadDrugs());
 
     toolbar.add(addButton);
     toolbar.add(editButton);
     toolbar.add(deleteButton);
     toolbar.add(filterButton);
+    toolbar.add(refreshButton);
 
     // Create table
     String[] columnNames = {"Drug ID", "Name", "Side Effects", "Benefits"};
