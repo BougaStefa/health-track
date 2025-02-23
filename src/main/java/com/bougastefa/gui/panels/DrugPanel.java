@@ -24,8 +24,7 @@ public class DrugPanel extends JPanel {
     setLayout(new BorderLayout());
 
     // Create toolbar
-    JToolBar toolbar = new JToolBar();
-    toolbar.setFloatable(false);
+    JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
 
     JButton addButton = new JButton("Add Drug");
     JButton editButton = new JButton("Edit Drug");
@@ -39,11 +38,11 @@ public class DrugPanel extends JPanel {
     filterButton.addActionListener(e -> showAdvancedFilterDialog());
     refreshButton.addActionListener(e -> loadDrugs());
 
-    toolbar.add(addButton);
-    toolbar.add(editButton);
-    toolbar.add(deleteButton);
-    toolbar.add(filterButton);
-    toolbar.add(refreshButton);
+    buttonPanel.add(addButton);
+    buttonPanel.add(editButton);
+    buttonPanel.add(deleteButton);
+    buttonPanel.add(filterButton);
+    buttonPanel.add(refreshButton);
 
     // Create table
     String[] columnNames = {"Drug ID", "Name", "Side Effects", "Benefits"};
@@ -60,7 +59,7 @@ public class DrugPanel extends JPanel {
     JScrollPane scrollPane = new JScrollPane(drugTable);
 
     // Add components to panel
-    add(toolbar, BorderLayout.NORTH);
+    add(buttonPanel, BorderLayout.NORTH);
     add(scrollPane, BorderLayout.CENTER);
 
     // Load initial data
