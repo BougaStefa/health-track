@@ -1,5 +1,6 @@
 package com.bougastefa.gui.panels;
 
+import com.bougastefa.gui.components.ButtonPanel;
 import com.bougastefa.gui.components.FilterDialog;
 import com.bougastefa.gui.components.FilterResult;
 import com.bougastefa.gui.components.FilterableField;
@@ -9,42 +10,38 @@ import java.awt.*;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Vector;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 
 public class DrugPanel extends JPanel {
   private final DrugService drugService;
-  private final JTable drugTable;
-  private final DefaultTableModel tableModel;
+  private DefaultTableModel tableModel;
+  private JTable drugTable;
 
   public DrugPanel() {
     drugService = new DrugService();
-
     setLayout(new BorderLayout());
 
-    // Create toolbar
-    JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+    // Add button panel
+    ButtonPanel buttonPanel = new ButtonPanel();
+    buttonPanel.setAddButtonListener(e -> showDrugDialog(null));
+    buttonPanel.setEditButtonListener(e -> editSelectedDrug());
+    buttonPanel.setDeleteButtonListener(e -> deleteSelectedDrug());
+    buttonPanel.setFilterButtonListener(e -> showAdvancedFilterDialog());
+    buttonPanel.setRefreshButtonListener(e -> loadDrugs());
 
-    JButton addButton = new JButton("Add Drug");
-    JButton editButton = new JButton("Edit Drug");
-    JButton deleteButton = new JButton("Delete Drug");
-    JButton filterButton = new JButton("Advanced Filter");
-    JButton refreshButton = new JButton("Refresh");
+    add(buttonPanel, BorderLayout.NORTH);
 
-    addButton.addActionListener(e -> showDrugDialog(null));
-    editButton.addActionListener(e -> editSelectedDrug());
-    deleteButton.addActionListener(e -> deleteSelectedDrug());
-    filterButton.addActionListener(e -> showAdvancedFilterDialog());
-    refreshButton.addActionListener(e -> loadDrugs());
+    // Setup table for Drugs
+    setupDrugTable();
+    JScrollPane scrollPane = new JScrollPane(drugTable);
+    add(scrollPane, BorderLayout.CENTER);
 
-    buttonPanel.add(addButton);
-    buttonPanel.add(editButton);
-    buttonPanel.add(deleteButton);
-    buttonPanel.add(filterButton);
-    buttonPanel.add(refreshButton);
+    // Initial load of drugs
+    loadDrugs();
+  }
 
-    // Create table
+  private void setupDrugTable() {
     String[] columnNames = {"Drug ID", "Name", "Side Effects", "Benefits"};
     tableModel =
         new DefaultTableModel(columnNames, 0) {
@@ -53,132 +50,53 @@ public class DrugPanel extends JPanel {
             return false;
           }
         };
-
     drugTable = new JTable(tableModel);
     drugTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-    JScrollPane scrollPane = new JScrollPane(drugTable);
-
-    // Add components to panel
-    add(buttonPanel, BorderLayout.NORTH);
-    add(scrollPane, BorderLayout.CENTER);
-
-    // Load initial data
-    loadDrugs();
   }
 
   private void loadDrugs() {
     try {
       List<Drug> drugs = drugService.getAllDrugs();
       populateTable(drugs);
-    } catch (Exception e) {
+    } catch (Exception ex) {
       JOptionPane.showMessageDialog(
-          this, "Error loading drugs: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+          this, "Error loading drugs: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
     }
   }
 
   private void populateTable(List<Drug> drugs) {
     tableModel.setRowCount(0);
     for (Drug drug : drugs) {
-      Vector<String> row = new Vector<>();
-      row.add(drug.getDrugId());
-      row.add(drug.getName());
-      row.add(drug.getSideEffects());
-      row.add(drug.getBenefits());
-      tableModel.addRow(row);
+      tableModel.addRow(
+          new Object[] {
+            drug.getDrugId(), drug.getName(), drug.getSideEffects(), drug.getBenefits()
+          });
     }
   }
 
-  private void showDrugDialog(Drug existingDrug) {
-    JDialog dialog =
-        new JDialog(
-            (Frame) SwingUtilities.getWindowAncestor(this),
-            existingDrug == null ? "Add Drug" : "Edit Drug",
-            true);
-    dialog.setLayout(new BorderLayout(10, 10));
-
-    // Form panel
-    JPanel formPanel = new JPanel(new GridBagLayout());
-    formPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-    GridBagConstraints gbc = new GridBagConstraints();
-    gbc.gridwidth = 1;
-    gbc.fill = GridBagConstraints.HORIZONTAL;
-    gbc.insets = new Insets(5, 5, 5, 5);
-
-    JTextField idField = new JTextField(20);
-    JTextField nameField = new JTextField(20);
-    JTextArea sideEffectsArea = new JTextArea(3, 20);
-    JTextArea benefitsArea = new JTextArea(3, 20);
-
-    sideEffectsArea.setLineWrap(true);
-    sideEffectsArea.setWrapStyleWord(true);
-    benefitsArea.setLineWrap(true);
-    benefitsArea.setWrapStyleWord(true);
-
-    if (existingDrug != null) {
-      idField.setText(existingDrug.getDrugId());
-      nameField.setText(existingDrug.getName());
-      sideEffectsArea.setText(existingDrug.getSideEffects());
-      benefitsArea.setText(existingDrug.getBenefits());
-      idField.setEditable(false);
+  private Drug getSelectedDrug() {
+    int row = drugTable.getSelectedRow();
+    if (row != -1) {
+      try {
+        String drugId = (String) tableModel.getValueAt(row, 0);
+        Drug drug = drugService.getDrugById(drugId);
+        if (drug == null) {
+          JOptionPane.showMessageDialog(
+              this, "Could not find the selected drug", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+        return drug;
+      } catch (Exception ex) {
+        JOptionPane.showMessageDialog(
+            this,
+            "Error retrieving drug details: " + ex.getMessage(),
+            "Error",
+            JOptionPane.ERROR_MESSAGE);
+      }
+    } else {
+      JOptionPane.showMessageDialog(
+          this, "Please select a drug first", "No Selection", JOptionPane.INFORMATION_MESSAGE);
     }
-
-    addFormField(formPanel, "Drug ID:", idField, gbc, 0);
-    addFormField(formPanel, "Name:", nameField, gbc, 1);
-    addFormField(formPanel, "Side Effects:", new JScrollPane(sideEffectsArea), gbc, 2);
-    addFormField(formPanel, "Benefits:", new JScrollPane(benefitsArea), gbc, 3);
-
-    // Button panel
-    JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-    JButton saveButton = new JButton("Save");
-    JButton cancelButton = new JButton("Cancel");
-
-    saveButton.addActionListener(
-        e -> {
-          try {
-            Drug drug =
-                new Drug(
-                    idField.getText(),
-                    nameField.getText(),
-                    sideEffectsArea.getText(),
-                    benefitsArea.getText());
-
-            if (existingDrug == null) {
-              drugService.addDrug(drug);
-              JOptionPane.showMessageDialog(this, "Drug added successfully");
-            } else {
-              drugService.updateDrug(drug);
-              JOptionPane.showMessageDialog(this, "Drug updated successfully");
-            }
-            loadDrugs();
-            dialog.dispose();
-          } catch (Exception ex) {
-            JOptionPane.showMessageDialog(
-                this, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-          }
-        });
-
-    cancelButton.addActionListener(e -> dialog.dispose());
-
-    buttonPanel.add(saveButton);
-    buttonPanel.add(cancelButton);
-
-    dialog.add(formPanel, BorderLayout.CENTER);
-    dialog.add(buttonPanel, BorderLayout.SOUTH);
-    dialog.pack();
-    dialog.setLocationRelativeTo(this);
-    dialog.setVisible(true);
-  }
-
-  private void addFormField(
-      JPanel panel, String label, JComponent field, GridBagConstraints gbc, int row) {
-    gbc.gridx = 0;
-    gbc.gridy = row;
-    gbc.weightx = 0;
-    panel.add(new JLabel(label), gbc);
-
-    gbc.gridx = 1;
-    gbc.weightx = 1;
-    panel.add(field, gbc);
+    return null;
   }
 
   private void editSelectedDrug() {
@@ -208,6 +126,91 @@ public class DrugPanel extends JPanel {
         }
       }
     }
+  }
+
+  private void showDrugDialog(Drug existingDrug) {
+    JDialog dialog =
+        new JDialog(
+            (Frame) SwingUtilities.getWindowAncestor(this),
+            existingDrug == null ? "Add Drug" : "Edit Drug",
+            true);
+    dialog.setLayout(new BorderLayout(10, 10));
+
+    // Form panel for entering drug details
+    JPanel formPanel = new JPanel(new GridBagLayout());
+    formPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+    GridBagConstraints gbc = new GridBagConstraints();
+    gbc.fill = GridBagConstraints.HORIZONTAL;
+    gbc.insets = new Insets(5, 5, 5, 5);
+
+    JTextField idField = new JTextField(20);
+    JTextField nameField = new JTextField(20);
+    JTextField sideEffectsField = new JTextField(20);
+    JTextField benefitsField = new JTextField(20);
+
+    if (existingDrug != null) {
+      idField.setText(existingDrug.getDrugId());
+      idField.setEditable(false);
+      nameField.setText(existingDrug.getName());
+      sideEffectsField.setText(existingDrug.getSideEffects());
+      benefitsField.setText(existingDrug.getBenefits());
+    }
+
+    addFormField(formPanel, "Drug ID:", idField, gbc, 0);
+    addFormField(formPanel, "Name:", nameField, gbc, 1);
+    addFormField(formPanel, "Side Effects:", sideEffectsField, gbc, 2);
+    addFormField(formPanel, "Benefits:", benefitsField, gbc, 3);
+
+    // Button panel for save and cancel
+    JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+    JButton saveButton = new JButton("Save");
+    JButton cancelButton = new JButton("Cancel");
+    buttonPanel.add(saveButton);
+    buttonPanel.add(cancelButton);
+
+    saveButton.addActionListener(
+        e -> {
+          try {
+            Drug drug =
+                new Drug(
+                    idField.getText(),
+                    nameField.getText(),
+                    sideEffectsField.getText(),
+                    benefitsField.getText());
+            if (existingDrug == null) {
+              drugService.addDrug(drug);
+              JOptionPane.showMessageDialog(this, "Drug added successfully");
+            } else {
+              drugService.updateDrug(drug);
+              JOptionPane.showMessageDialog(this, "Drug updated successfully");
+            }
+            loadDrugs();
+            dialog.dispose();
+          } catch (Exception ex) {
+            JOptionPane.showMessageDialog(
+                this, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+          }
+        });
+
+    cancelButton.addActionListener(e -> dialog.dispose());
+
+    dialog.add(formPanel, BorderLayout.CENTER);
+    dialog.add(buttonPanel, BorderLayout.SOUTH);
+    dialog.pack();
+    dialog.setLocationRelativeTo(this);
+    dialog.setVisible(true);
+  }
+
+  private void addFormField(
+      JPanel panel, String label, JComponent field, GridBagConstraints gbc, int row) {
+    gbc.gridx = 0;
+    gbc.gridy = row;
+    gbc.weightx = 0;
+    panel.add(new JLabel(label), gbc);
+
+    gbc.gridx = 1;
+    gbc.weightx = 1;
+    panel.add(field, gbc);
   }
 
   private void showAdvancedFilterDialog() {
@@ -251,30 +254,5 @@ public class DrugPanel extends JPanel {
       JOptionPane.showMessageDialog(
           this, "Error filtering drugs: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
     }
-  }
-
-  private Drug getSelectedDrug() {
-    int row = drugTable.getSelectedRow();
-    if (row != -1) {
-      try {
-        String drugId = (String) tableModel.getValueAt(row, 0);
-        Drug drug = drugService.getDrugById(drugId);
-        if (drug == null) {
-          JOptionPane.showMessageDialog(
-              this, "Could not find the selected drug", "Error", JOptionPane.ERROR_MESSAGE);
-        }
-        return drug;
-      } catch (Exception ex) {
-        JOptionPane.showMessageDialog(
-            this,
-            "Error retrieving drug details: " + ex.getMessage(),
-            "Error",
-            JOptionPane.ERROR_MESSAGE);
-      }
-    } else {
-      JOptionPane.showMessageDialog(
-          this, "Please select a drug first", "No Selection", JOptionPane.INFORMATION_MESSAGE);
-    }
-    return null;
   }
 }
