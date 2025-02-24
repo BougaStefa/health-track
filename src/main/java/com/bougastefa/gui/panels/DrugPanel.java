@@ -23,7 +23,7 @@ public class DrugPanel extends JPanel {
     setLayout(new BorderLayout());
 
     // Add button panel
-    ButtonPanel buttonPanel = new ButtonPanel();
+    ButtonPanel buttonPanel = new ButtonPanel("Drug");
     buttonPanel.setAddButtonListener(e -> showDrugDialog(null));
     buttonPanel.setEditButtonListener(e -> editSelectedDrug());
     buttonPanel.setDeleteButtonListener(e -> deleteSelectedDrug());

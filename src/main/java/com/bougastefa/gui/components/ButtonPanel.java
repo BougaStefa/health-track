@@ -11,15 +11,17 @@ public class ButtonPanel extends JPanel {
   private JButton filterButton;
   private JButton refreshButton;
 
-  public ButtonPanel() {
+  public ButtonPanel(String entityName) {
     setLayout(new FlowLayout(FlowLayout.CENTER));
 
-    addButton = new JButton("Add Drug");
-    editButton = new JButton("Edit Drug");
-    deleteButton = new JButton("Delete Drug");
+    // Initialize buttons with dynamic entity name
+    addButton = new JButton("Add " + entityName);
+    editButton = new JButton("Edit " + entityName);
+    deleteButton = new JButton("Delete " + entityName);
     filterButton = new JButton("Advanced Filter");
     refreshButton = new JButton("Refresh");
 
+    // Add all buttons to the panel
     add(addButton);
     add(editButton);
     add(deleteButton);
@@ -27,6 +29,7 @@ public class ButtonPanel extends JPanel {
     add(refreshButton);
   }
 
+  // Listener setters
   public void setAddButtonListener(ActionListener listener) {
     addButton.addActionListener(listener);
   }
@@ -45,5 +48,15 @@ public class ButtonPanel extends JPanel {
 
   public void setRefreshButtonListener(ActionListener listener) {
     refreshButton.addActionListener(listener);
+  }
+
+  // Optional: Method to add additional buttons if needed for specific panels
+  // Designed for use with Patient as it requires an extra button
+  public void addCustomButton(String buttonText, ActionListener listener) {
+    JButton customButton = new JButton(buttonText);
+    customButton.addActionListener(listener);
+    add(customButton);
+    revalidate();
+    repaint();
   }
 }
