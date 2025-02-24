@@ -1,5 +1,6 @@
 package com.bougastefa.gui.panels;
 
+import com.bougastefa.gui.components.ButtonPanel;
 import com.bougastefa.models.Insurance;
 import com.bougastefa.services.InsuranceService;
 import java.awt.*;
@@ -16,39 +17,23 @@ public class InsurancePanel extends JPanel {
     insuranceService = new InsuranceService();
     setLayout(new BorderLayout());
 
-    // Top panel with three sections:
-    // Left: Advanced Filter and Clear Filters buttons.
-    // Center: Add, Edit, Delete buttons.
-    // Right: Refresh button.
-    JPanel topPanel = new JPanel(new BorderLayout());
+    ButtonPanel buttonPanel = new ButtonPanel("Insurance");
+    buttonPanel.setAddButtonListener(e -> showInsuranceDialog(null));
+    buttonPanel.setEditButtonListener(
+        e -> {
+          Insurance selectedInsurance = getSelectedInsurance();
+          if (selectedInsurance != null) {
+            showInsuranceDialog(selectedInsurance);
+          } else {
+            JOptionPane.showMessageDialog(this, "Please select an insurance to edit");
+          }
+        });
+    buttonPanel.setDeleteButtonListener(e -> deleteSelectedInsurance());
+    buttonPanel.setFilterButtonListener(e -> showAdvancedFilterDialog());
+    buttonPanel.setRefreshButtonListener(e -> loadInsurances());
 
-    // Left section: Advanced Filter and Clear Filters buttons
-    JPanel leftButtonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-    JButton advancedFilterButton = new JButton("Advanced Filter");
-    JButton clearFiltersButton = new JButton("Clear Filters");
-    leftButtonPanel.add(advancedFilterButton);
-    leftButtonPanel.add(clearFiltersButton);
+    add(buttonPanel, BorderLayout.NORTH); // Setup table for Insurances
 
-    // Center section: Add, Edit and Delete buttons
-    JPanel centerButtonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-    JButton addButton = new JButton("Add Insurance");
-    JButton editButton = new JButton("Edit Insurance");
-    JButton deleteButton = new JButton("Delete Insurance");
-    centerButtonPanel.add(addButton);
-    centerButtonPanel.add(editButton);
-    centerButtonPanel.add(deleteButton);
-
-    // Right section: Refresh button
-    JPanel rightButtonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-    JButton refreshButton = new JButton("Refresh");
-    rightButtonPanel.add(refreshButton);
-
-    topPanel.add(leftButtonPanel, BorderLayout.WEST);
-    topPanel.add(centerButtonPanel, BorderLayout.CENTER);
-    topPanel.add(rightButtonPanel, BorderLayout.EAST);
-    add(topPanel, BorderLayout.NORTH);
-
-    // Setup table for Insurances
     String[] columnNames = {"ID", "Company", "Address", "Phone"};
     tableModel =
         new DefaultTableModel(columnNames, 0) {
@@ -63,23 +48,6 @@ public class InsurancePanel extends JPanel {
     insuranceTable.getTableHeader().setReorderingAllowed(false);
     JScrollPane scrollPane = new JScrollPane(insuranceTable);
     add(scrollPane, BorderLayout.CENTER);
-
-    // Listeners for top buttons
-    refreshButton.addActionListener(e -> loadInsurances());
-    advancedFilterButton.addActionListener(e -> showAdvancedFilterDialog());
-    clearFiltersButton.addActionListener(e -> loadInsurances());
-
-    addButton.addActionListener(e -> showInsuranceDialog(null));
-    editButton.addActionListener(
-        e -> {
-          Insurance selectedInsurance = getSelectedInsurance();
-          if (selectedInsurance != null) {
-            showInsuranceDialog(selectedInsurance);
-          } else {
-            JOptionPane.showMessageDialog(this, "Please select an insurance to edit");
-          }
-        });
-    deleteButton.addActionListener(e -> deleteSelectedInsurance());
 
     // Initial load of insurances
     loadInsurances();
