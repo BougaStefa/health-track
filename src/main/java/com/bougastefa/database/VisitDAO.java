@@ -34,10 +34,10 @@ public class VisitDAO {
         Visit visit =
             new Visit(
                 rs.getDate("dateOfVisit").toLocalDate(),
-                rs.getString("patientID"),
-                rs.getString("doctorID"),
                 rs.getString("symptoms"),
-                rs.getString("diagnosis"));
+                rs.getString("diagnosis"),
+                rs.getString("doctorID"),
+                rs.getString("patientID"));
         visits.add(visit);
       }
     }
