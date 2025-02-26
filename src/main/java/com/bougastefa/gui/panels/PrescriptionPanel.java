@@ -175,7 +175,16 @@ public class PrescriptionPanel extends JPanel {
     saveButton.addActionListener(
         e -> {
           try {
+            // Enforce PK constraint
             String id = idField.getText().trim();
+            if (id.isEmpty()) {
+              JOptionPane.showMessageDialog(
+                  this,
+                  "Prescription ID cannot be empty",
+                  "Validation Error",
+                  JOptionPane.ERROR_MESSAGE);
+              return;
+            }
             String dateText = dateField.getText().trim();
             String drugId = drugIdField.getText().trim();
             String doctorId = doctorIdField.getText().trim();

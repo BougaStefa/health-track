@@ -143,9 +143,16 @@ public class DoctorPanel extends JPanel {
     saveButton.addActionListener(
         e -> {
           try {
+            // Enforce PK constraint
+            String id = idField.getText().trim();
+            if (id.isEmpty()) {
+              JOptionPane.showMessageDialog(
+                  this, "Doctor ID cannot be empty", "Validation Error", JOptionPane.ERROR_MESSAGE);
+              return;
+            }
             Doctor doctor =
                 new Doctor(
-                    idField.getText().trim(),
+                    id,
                     firstNameField.getText().trim(),
                     surnameField.getText().trim(),
                     addressField.getText().trim(),

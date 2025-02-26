@@ -171,12 +171,16 @@ public class DrugPanel extends JPanel {
     saveButton.addActionListener(
         e -> {
           try {
+            // Enforce PK constraint
+            String id = idField.getText().trim();
+            if (id.isEmpty()) {
+              JOptionPane.showMessageDialog(
+                  this, "Drug ID cannot be empty", "Validation Error", JOptionPane.ERROR_MESSAGE);
+              return;
+            }
             Drug drug =
                 new Drug(
-                    idField.getText(),
-                    nameField.getText(),
-                    sideEffectsField.getText(),
-                    benefitsField.getText());
+                    id, nameField.getText(), sideEffectsField.getText(), benefitsField.getText());
             if (existingDrug == null) {
               drugService.addDrug(drug);
               JOptionPane.showMessageDialog(this, "Drug added successfully");

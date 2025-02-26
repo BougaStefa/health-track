@@ -132,12 +132,20 @@ public class InsurancePanel extends JPanel {
     saveButton.addActionListener(
         e -> {
           try {
+            // Enforce PK constraint
+            String id = idField.getText().trim();
+            if (id.isEmpty()) {
+              JOptionPane.showMessageDialog(
+                  this,
+                  "Insurance ID cannot be empty",
+                  "Validation Error",
+                  JOptionPane.ERROR_MESSAGE);
+              return;
+            }
+
             Insurance insurance =
                 new Insurance(
-                    idField.getText(),
-                    companyField.getText(),
-                    addressField.getText(),
-                    phoneField.getText());
+                    id, companyField.getText(), addressField.getText(), phoneField.getText());
             if (existingInsurance == null) {
               insuranceService.addInsurance(insurance);
               JOptionPane.showMessageDialog(this, "Insurance added successfully");

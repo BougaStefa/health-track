@@ -152,7 +152,15 @@ public class VisitPanel extends JPanel {
             String patientId = patientIdField.getText().trim();
             String symptoms = symptomsField.getText().trim();
             String diagnosis = diagnosisField.getText().trim();
-
+            // Enforce PK constraint
+            if (dateText.isEmpty() || doctorId.isEmpty() || patientId.isEmpty()) {
+              JOptionPane.showMessageDialog(
+                  this,
+                  "Date, Doctor ID, and Patient ID cannot be empty",
+                  "Validation Error",
+                  JOptionPane.ERROR_MESSAGE);
+              return;
+            }
             // Handle date
             LocalDate date;
             try {
