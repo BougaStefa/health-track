@@ -1,5 +1,6 @@
 package com.bougastefa.gui.panels;
 
+import com.bougastefa.gui.components.ButtonPanel;
 import com.bougastefa.models.Doctor;
 import com.bougastefa.models.Patient;
 import com.bougastefa.services.DoctorService;
@@ -20,36 +21,25 @@ public class PatientPanel extends JPanel {
   public PatientPanel() {
     setLayout(new BorderLayout());
 
-    // Top panel with three sections
-    JPanel topPanel = new JPanel(new BorderLayout());
+    ButtonPanel buttonPanel = new ButtonPanel("Patient");
+    buttonPanel.setAddButtonListener(e -> showPatientDialog(null));
+    buttonPanel.setEditButtonListener(
+        e -> {
+          Patient selectedPatient = getSelectedPatient();
+          if (selectedPatient != null) {
+            showPatientDialog(selectedPatient);
+          } else {
+            JOptionPane.showMessageDialog(this, "Please select a patient to edit");
+          }
+        });
+    buttonPanel.setDeleteButtonListener(e -> deleteSelectedPatient());
+    buttonPanel.setFilterButtonListener(e -> showAdvancedFilterDialog());
+    buttonPanel.setRefreshButtonListener(e -> loadPatients());
 
-    // Left section: Advanced Filter and Clear Filters buttons
-    JPanel leftButtonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-    JButton advancedFilterButton = new JButton("Advanced Filter");
-    JButton clearFiltersButton = new JButton("Clear Filters");
-    leftButtonPanel.add(advancedFilterButton);
-    leftButtonPanel.add(clearFiltersButton);
+    // Add custom button for Primary Doctor functionality
+    buttonPanel.addCustomButton("Primary Doctor", e -> showPrimaryDoctorDetails());
 
-    // Center section: Add, Edit, Delete and Primary Doctor buttons
-    JPanel centerButtonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-    JButton addButton = new JButton("Add Patient");
-    JButton editButton = new JButton("Edit Patient");
-    JButton deleteButton = new JButton("Delete Patient");
-    JButton primaryDoctorButton = new JButton("Primary Doctor");
-    centerButtonPanel.add(addButton);
-    centerButtonPanel.add(editButton);
-    centerButtonPanel.add(deleteButton);
-    centerButtonPanel.add(primaryDoctorButton);
-
-    // Right section: Refresh button
-    JPanel rightButtonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-    JButton refreshButton = new JButton("Refresh");
-    rightButtonPanel.add(refreshButton);
-
-    topPanel.add(leftButtonPanel, BorderLayout.WEST);
-    topPanel.add(centerButtonPanel, BorderLayout.CENTER);
-    topPanel.add(rightButtonPanel, BorderLayout.EAST);
-    add(topPanel, BorderLayout.NORTH);
+    add(buttonPanel, BorderLayout.NORTH);
 
     // Setup table for Patients
     String[] columnNames = {
@@ -67,24 +57,6 @@ public class PatientPanel extends JPanel {
     patientTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
     JScrollPane scrollPane = new JScrollPane(patientTable);
     add(scrollPane, BorderLayout.CENTER);
-
-    // Listeners for top buttons
-    refreshButton.addActionListener(e -> loadPatients());
-    advancedFilterButton.addActionListener(e -> showAdvancedFilterDialog());
-    clearFiltersButton.addActionListener(e -> loadPatients());
-
-    addButton.addActionListener(e -> showPatientDialog(null));
-    editButton.addActionListener(
-        e -> {
-          Patient selectedPatient = getSelectedPatient();
-          if (selectedPatient != null) {
-            showPatientDialog(selectedPatient);
-          } else {
-            JOptionPane.showMessageDialog(this, "Please select a patient to edit");
-          }
-        });
-    deleteButton.addActionListener(e -> deleteSelectedPatient());
-    primaryDoctorButton.addActionListener(e -> showPrimaryDoctorDetails());
 
     // Initial load of patients
     loadPatients();

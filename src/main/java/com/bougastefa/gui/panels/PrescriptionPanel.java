@@ -1,5 +1,6 @@
 package com.bougastefa.gui.panels;
 
+import com.bougastefa.gui.components.ButtonPanel;
 import com.bougastefa.models.Prescription;
 import com.bougastefa.services.PrescriptionService;
 import java.awt.*;
@@ -20,34 +21,23 @@ public class PrescriptionPanel extends JPanel {
     prescriptionService = new PrescriptionService();
     setLayout(new BorderLayout());
 
-    // Top panel with three sections
-    JPanel topPanel = new JPanel(new BorderLayout());
+    // Replace custom button panels with ButtonPanel component
+    ButtonPanel buttonPanel = new ButtonPanel("Prescription");
+    buttonPanel.setAddButtonListener(e -> showPrescriptionDialog(null));
+    buttonPanel.setEditButtonListener(
+        e -> {
+          Prescription selectedPrescription = getSelectedPrescription();
+          if (selectedPrescription != null) {
+            showPrescriptionDialog(selectedPrescription);
+          } else {
+            JOptionPane.showMessageDialog(this, "Please select a prescription to edit");
+          }
+        });
+    buttonPanel.setDeleteButtonListener(e -> deleteSelectedPrescription());
+    buttonPanel.setFilterButtonListener(e -> showAdvancedFilterDialog());
+    buttonPanel.setRefreshButtonListener(e -> loadPrescriptions());
 
-    // Left section: Advanced Filter and Clear Filters buttons
-    JPanel leftButtonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-    JButton advancedFilterButton = new JButton("Advanced Filter");
-    JButton clearFiltersButton = new JButton("Clear Filters");
-    leftButtonPanel.add(advancedFilterButton);
-    leftButtonPanel.add(clearFiltersButton);
-
-    // Center section: Add, Edit and Delete buttons
-    JPanel centerButtonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-    JButton addButton = new JButton("Add Prescription");
-    JButton editButton = new JButton("Edit Prescription");
-    JButton deleteButton = new JButton("Delete Prescription");
-    centerButtonPanel.add(addButton);
-    centerButtonPanel.add(editButton);
-    centerButtonPanel.add(deleteButton);
-
-    // Right section: Refresh button
-    JPanel rightButtonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-    JButton refreshButton = new JButton("Refresh");
-    rightButtonPanel.add(refreshButton);
-
-    topPanel.add(leftButtonPanel, BorderLayout.WEST);
-    topPanel.add(centerButtonPanel, BorderLayout.CENTER);
-    topPanel.add(rightButtonPanel, BorderLayout.EAST);
-    add(topPanel, BorderLayout.NORTH);
+    add(buttonPanel, BorderLayout.NORTH);
 
     // Setup table for Prescriptions
     String[] columnNames = {
@@ -72,23 +62,6 @@ public class PrescriptionPanel extends JPanel {
     prescriptionTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
     JScrollPane scrollPane = new JScrollPane(prescriptionTable);
     add(scrollPane, BorderLayout.CENTER);
-
-    // Listeners for top buttons
-    refreshButton.addActionListener(e -> loadPrescriptions());
-    advancedFilterButton.addActionListener(e -> showAdvancedFilterDialog());
-    clearFiltersButton.addActionListener(e -> loadPrescriptions());
-
-    addButton.addActionListener(e -> showPrescriptionDialog(null));
-    editButton.addActionListener(
-        e -> {
-          Prescription selectedPrescription = getSelectedPrescription();
-          if (selectedPrescription != null) {
-            showPrescriptionDialog(selectedPrescription);
-          } else {
-            JOptionPane.showMessageDialog(this, "Please select a prescription to edit");
-          }
-        });
-    deleteButton.addActionListener(e -> deleteSelectedPrescription());
 
     // Initial load of prescriptions
     loadPrescriptions();
