@@ -4,17 +4,24 @@ import com.bougastefa.database.PrescriptionDAO;
 import com.bougastefa.models.Prescription;
 import java.sql.SQLException;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class PrescriptionService {
   private PrescriptionDAO prescriptionDAO = new PrescriptionDAO();
+  private static final Logger logger = LoggerFactory.getLogger(PrescriptionService.class);
 
   // Add a new prescription
   public void addPrescription(Prescription prescription) {
+    if (prescription == null) {
+      throw new IllegalArgumentException("Prescription cannot be null");
+    }
     try {
       prescriptionDAO.addPrescription(prescription);
-      System.out.println("Prescription added successfully!");
+      logger.info("Prescription added successfully: {}", prescription.getPrescriptionId());
     } catch (SQLException e) {
-      System.err.println("Error adding prescription: " + e.getMessage());
+      logger.error("Error adding prescription: {}", prescription.getPrescriptionId(), e);
+      throw new ServiceException("Failed to add prescription", e);
     }
   }
 
@@ -23,38 +30,49 @@ public class PrescriptionService {
     try {
       return prescriptionDAO.getAllPrescriptions();
     } catch (SQLException e) {
-      System.err.println("Error fetching prescriptions: " + e.getMessage());
+      logger.error("Error fetching prescriptions", e);
       return List.of(); // Return an empty list on error
     }
   }
 
   // Retrieve a prescription by ID
   public Prescription getPrescriptionById(String prescriptionId) {
+    if (prescriptionId == null || prescriptionId.isEmpty()) {
+      throw new IllegalArgumentException("Prescription ID cannot be empty");
+    }
     try {
       return prescriptionDAO.getPrescriptionById(prescriptionId);
     } catch (SQLException e) {
-      System.err.println("Error fetching prescription: " + e.getMessage());
+      logger.error("Error fetching prescription: {}", prescriptionId, e);
       return null;
     }
   }
 
   // Update a prescription
   public void updatePrescription(Prescription prescription) {
+    if (prescription == null) {
+      throw new IllegalArgumentException("Prescription cannot be null");
+    }
     try {
       prescriptionDAO.updatePrescription(prescription);
-      System.out.println("Prescription updated successfully!");
+      logger.info("Prescription updated successfully: {}", prescription.getPrescriptionId());
     } catch (SQLException e) {
-      System.err.println("Error updating prescription: " + e.getMessage());
+      logger.error("Error updating prescription: {}", prescription.getPrescriptionId(), e);
+      throw new ServiceException("Failed to update prescription", e);
     }
   }
 
   // Delete a prescription
   public void deletePrescription(String prescriptionId) {
+    if (prescriptionId == null || prescriptionId.isEmpty()) {
+      throw new IllegalArgumentException("Prescription ID cannot be empty");
+    }
     try {
       prescriptionDAO.deletePrescription(prescriptionId);
-      System.out.println("Prescription deleted successfully!");
+      logger.info("Prescription deleted successfully: {}", prescriptionId);
     } catch (SQLException e) {
-      System.err.println("Error deleting prescription: " + e.getMessage());
+      logger.error("Error deleting prescription: {}", prescriptionId, e);
+      throw new ServiceException("Failed to delete prescription", e);
     }
   }
 }
