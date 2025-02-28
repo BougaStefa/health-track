@@ -2,6 +2,7 @@ package com.bougastefa.gui.panels;
 
 import com.bougastefa.gui.components.ButtonPanel;
 import com.bougastefa.models.Doctor;
+import com.bougastefa.models.Specialist;
 import com.bougastefa.services.DoctorService;
 import java.awt.*;
 import java.util.List;
@@ -33,7 +34,9 @@ public class DoctorPanel extends JPanel {
     buttonPanel.setRefreshButtonListener(e -> loadDoctors());
 
     add(buttonPanel, BorderLayout.NORTH); // Setup table for Doctors
-    String[] columnNames = {"Doctor ID", "First Name", "Surname", "Address", "Email", "Hospital"};
+    String[] columnNames = {
+      "Doctor ID", "First Name", "Surname", "Address", "Email", "Hospital", "Specialization"
+    };
     tableModel =
         new DefaultTableModel(columnNames, 0) {
           @Override
@@ -64,6 +67,11 @@ public class DoctorPanel extends JPanel {
   private void populateTable(List<Doctor> doctors) {
     tableModel.setRowCount(0);
     for (Doctor doctor : doctors) {
+      String specialization = "";
+      if (doctor instanceof Specialist) {
+        specialization = ((Specialist) doctor).getSpecialization();
+      }
+
       tableModel.addRow(
           new Object[] {
             doctor.getDoctorId(),
@@ -71,7 +79,8 @@ public class DoctorPanel extends JPanel {
             doctor.getSurname(),
             doctor.getAddress(),
             doctor.getEmail(),
-            doctor.getHospital()
+            doctor.getHospital(),
+            specialization
           });
     }
   }
@@ -85,8 +94,14 @@ public class DoctorPanel extends JPanel {
       String address = (String) tableModel.getValueAt(row, 3);
       String email = (String) tableModel.getValueAt(row, 4);
       String hospital = (String) tableModel.getValueAt(row, 5);
+      String specialization = (String) tableModel.getValueAt(row, 6);
 
-      return new Doctor(doctorId, firstName, surname, address, email, hospital);
+      if (specialization != null && !specialization.isEmpty()) {
+        return new Specialist(
+            doctorId, firstName, surname, address, email, hospital, specialization);
+      } else {
+        return new Doctor(doctorId, firstName, surname, address, email, hospital);
+      }
     }
     return null;
   }
@@ -100,7 +115,7 @@ public class DoctorPanel extends JPanel {
     dialog.setLayout(new BorderLayout(10, 10));
 
     // Form panel for entering doctor details
-    JPanel formPanel = new JPanel(new GridLayout(6, 2, 5, 5));
+    JPanel formPanel = new JPanel(new GridLayout(7, 2, 5, 5));
     formPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
     JTextField idField = new JTextField(20);
@@ -109,6 +124,8 @@ public class DoctorPanel extends JPanel {
     JTextField addressField = new JTextField(20);
     JTextField emailField = new JTextField(20);
     JTextField hospitalField = new JTextField(20);
+    JTextField specializationField = new JTextField(20);
+    JCheckBox isSpecialistCheckBox = new JCheckBox("Is Specialist");
 
     if (existingDoctor != null) {
       idField.setText(existingDoctor.getDoctorId());
@@ -118,7 +135,21 @@ public class DoctorPanel extends JPanel {
       addressField.setText(existingDoctor.getAddress());
       emailField.setText(existingDoctor.getEmail());
       hospitalField.setText(existingDoctor.getHospital());
+
+      if (existingDoctor instanceof Specialist) {
+        specializationField.setText(((Specialist) existingDoctor).getSpecialization());
+        isSpecialistCheckBox.setSelected(true);
+        specializationField.setEnabled(true);
+      } else {
+        isSpecialistCheckBox.setSelected(false);
+        specializationField.setEnabled(false);
+      }
+    } else {
+      specializationField.setEnabled(false);
     }
+
+    isSpecialistCheckBox.addActionListener(
+        e -> specializationField.setEnabled(isSpecialistCheckBox.isSelected()));
 
     formPanel.add(new JLabel("Doctor ID:"));
     formPanel.add(idField);
@@ -132,6 +163,9 @@ public class DoctorPanel extends JPanel {
     formPanel.add(emailField);
     formPanel.add(new JLabel("Hospital:"));
     formPanel.add(hospitalField);
+    formPanel.add(isSpecialistCheckBox);
+    formPanel.add(new JLabel("Specialization:"));
+    formPanel.add(specializationField);
 
     // Button panel for save and cancel
     JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
@@ -150,14 +184,37 @@ public class DoctorPanel extends JPanel {
                   this, "Doctor ID cannot be empty", "Validation Error", JOptionPane.ERROR_MESSAGE);
               return;
             }
-            Doctor doctor =
-                new Doctor(
-                    id,
-                    firstNameField.getText().trim(),
-                    surnameField.getText().trim(),
-                    addressField.getText().trim(),
-                    emailField.getText().trim(),
-                    hospitalField.getText().trim());
+
+            Doctor doctor;
+            if (isSpecialistCheckBox.isSelected()) {
+              String specialization = specializationField.getText().trim();
+              if (specialization.isEmpty()) {
+                JOptionPane.showMessageDialog(
+                    this,
+                    "Specialization cannot be empty for specialists",
+                    "Validation Error",
+                    JOptionPane.ERROR_MESSAGE);
+                return;
+              }
+              doctor =
+                  new Specialist(
+                      id,
+                      firstNameField.getText().trim(),
+                      surnameField.getText().trim(),
+                      addressField.getText().trim(),
+                      emailField.getText().trim(),
+                      hospitalField.getText().trim(),
+                      specialization);
+            } else {
+              doctor =
+                  new Doctor(
+                      id,
+                      firstNameField.getText().trim(),
+                      surnameField.getText().trim(),
+                      addressField.getText().trim(),
+                      emailField.getText().trim(),
+                      hospitalField.getText().trim());
+            }
 
             if (existingDoctor == null) {
               doctorService.addDoctor(doctor);
@@ -216,7 +273,7 @@ public class DoctorPanel extends JPanel {
         new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Advanced Filter", true);
     filterDialog.setLayout(new BorderLayout(10, 10));
 
-    JPanel formPanel = new JPanel(new GridLayout(6, 2, 5, 5));
+    JPanel formPanel = new JPanel(new GridLayout(7, 2, 5, 5));
     formPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
     JTextField filterIdField = new JTextField(20);
@@ -225,6 +282,7 @@ public class DoctorPanel extends JPanel {
     JTextField filterAddressField = new JTextField(20);
     JTextField filterEmailField = new JTextField(20);
     JTextField filterHospitalField = new JTextField(20);
+    JTextField filterSpecializationField = new JTextField(20);
 
     formPanel.add(new JLabel("Doctor ID contains:"));
     formPanel.add(filterIdField);
@@ -238,6 +296,8 @@ public class DoctorPanel extends JPanel {
     formPanel.add(filterEmailField);
     formPanel.add(new JLabel("Hospital contains:"));
     formPanel.add(filterHospitalField);
+    formPanel.add(new JLabel("Specialization contains:"));
+    formPanel.add(filterSpecializationField);
 
     JPanel filterButtonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
     JButton filterButton = new JButton("Filter");
@@ -256,6 +316,7 @@ public class DoctorPanel extends JPanel {
             String addressFilter = filterAddressField.getText().trim();
             String emailFilter = filterEmailField.getText().trim();
             String hospitalFilter = filterHospitalField.getText().trim();
+            String specializationFilter = filterSpecializationField.getText().trim();
 
             doctors =
                 doctors.stream()
@@ -291,6 +352,19 @@ public class DoctorPanel extends JPanel {
                                 || d.getHospital()
                                     .toLowerCase()
                                     .contains(hospitalFilter.toLowerCase()))
+                    .filter(
+                        d -> {
+                          if (specializationFilter.isEmpty()) {
+                            return true;
+                          }
+                          if (d instanceof Specialist) {
+                            return ((Specialist) d)
+                                .getSpecialization()
+                                .toLowerCase()
+                                .contains(specializationFilter.toLowerCase());
+                          }
+                          return false;
+                        })
                     .toList();
 
             populateTable(doctors);
