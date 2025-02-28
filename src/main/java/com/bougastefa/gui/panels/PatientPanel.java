@@ -4,6 +4,7 @@ import com.bougastefa.gui.components.ButtonPanel;
 import com.bougastefa.models.Doctor;
 import com.bougastefa.models.InsuredPatient;
 import com.bougastefa.models.Patient;
+import com.bougastefa.models.Specialist;
 import com.bougastefa.services.DoctorService;
 import com.bougastefa.services.PatientService;
 import com.bougastefa.services.VisitService;
@@ -291,8 +292,11 @@ public class PatientPanel extends JPanel {
         new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Primary Doctor Details", true);
     dialog.setLayout(new BorderLayout(10, 10));
 
+    // Check if the doctor is a specialist to determine grid size
+    int rowCount = (primaryDoctor instanceof Specialist) ? 7 : 6;
+
     // Create panel for doctor details
-    JPanel detailsPanel = new JPanel(new GridLayout(6, 2, 5, 5));
+    JPanel detailsPanel = new JPanel(new GridLayout(rowCount, 2, 5, 5));
     detailsPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
     // Add doctor details
@@ -313,6 +317,12 @@ public class PatientPanel extends JPanel {
 
     detailsPanel.add(new JLabel("Hospital:"));
     detailsPanel.add(new JLabel(primaryDoctor.getHospital()));
+
+    // Show specialization if the doctor is a specialist
+    if (primaryDoctor instanceof Specialist) {
+      detailsPanel.add(new JLabel("Specialization:"));
+      detailsPanel.add(new JLabel(((Specialist) primaryDoctor).getSpecialization()));
+    }
 
     // Add close button
     JButton closeButton = new JButton("Close");
