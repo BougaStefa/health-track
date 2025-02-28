@@ -150,85 +150,76 @@ public class PatientPanel extends JPanel {
       if (existingPatient instanceof InsuredPatient) {
         insuranceIdField.setText(((InsuredPatient) existingPatient).getInsuranceId());
       }
-
-      addFormField(formPanel, "Patient ID:", idField, gbc, 0);
-      addFormField(formPanel, "First Name:", firstNameField, gbc, 1);
-      addFormField(formPanel, "Surname:", surnameField, gbc, 2);
-      addFormField(formPanel, "Postcode:", postcodeField, gbc, 3);
-      addFormField(formPanel, "Address:", addressField, gbc, 4);
-      addFormField(formPanel, "Email:", emailField, gbc, 5);
-      addFormField(formPanel, "Phone:", phoneField, gbc, 6);
-      addFormField(formPanel, "Insurance ID:", insuranceIdField, gbc, 7);
-
-      // Button panel for save and cancel
-      JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-      JButton saveButton = new JButton("Save");
-      JButton cancelButton = new JButton("Cancel");
-      buttonPanel.add(saveButton);
-      buttonPanel.add(cancelButton);
-
-      saveButton.addActionListener(
-          e -> {
-            try {
-              // Enforce PK constraint
-              String patientId = idField.getText().trim();
-              if (patientId.isEmpty()) {
-                JOptionPane.showMessageDialog(
-                    this,
-                    "Patient ID cannot be empty",
-                    "Validation Error",
-                    JOptionPane.ERROR_MESSAGE);
-                return;
-              }
-
-              String firstName = firstNameField.getText().trim();
-              String surname = surnameField.getText().trim();
-              String postcode = postcodeField.getText().trim();
-              String address = addressField.getText().trim();
-              String phone = phoneField.getText().trim();
-              String email = emailField.getText().trim();
-              String insuranceId = insuranceIdField.getText().trim();
-
-              Patient patient;
-              if (insuranceId.isEmpty()) {
-                patient =
-                    new Patient(patientId, firstName, surname, postcode, address, phone, email);
-              } else {
-                patient =
-                    new InsuredPatient(
-                        patientId,
-                        firstName,
-                        surname,
-                        postcode,
-                        address,
-                        phone,
-                        email,
-                        insuranceId);
-              }
-
-              if (existingPatient == null) {
-                patientService.addPatient(patient);
-                JOptionPane.showMessageDialog(this, "Patient added successfully");
-              } else {
-                patientService.updatePatient(patient);
-                JOptionPane.showMessageDialog(this, "Patient updated successfully");
-              }
-              loadPatients();
-              dialog.dispose();
-            } catch (Exception ex) {
-              JOptionPane.showMessageDialog(
-                  this, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-            }
-          });
-
-      cancelButton.addActionListener(e -> dialog.dispose());
-
-      dialog.add(formPanel, BorderLayout.CENTER);
-      dialog.add(buttonPanel, BorderLayout.SOUTH);
-      dialog.pack();
-      dialog.setLocationRelativeTo(this);
-      dialog.setVisible(true);
     }
+    addFormField(formPanel, "Patient ID:", idField, gbc, 0);
+    addFormField(formPanel, "First Name:", firstNameField, gbc, 1);
+    addFormField(formPanel, "Surname:", surnameField, gbc, 2);
+    addFormField(formPanel, "Postcode:", postcodeField, gbc, 3);
+    addFormField(formPanel, "Address:", addressField, gbc, 4);
+    addFormField(formPanel, "Email:", emailField, gbc, 5);
+    addFormField(formPanel, "Phone:", phoneField, gbc, 6);
+    addFormField(formPanel, "Insurance ID:", insuranceIdField, gbc, 7);
+
+    // Button panel for save and cancel
+    JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+    JButton saveButton = new JButton("Save");
+    JButton cancelButton = new JButton("Cancel");
+    buttonPanel.add(saveButton);
+    buttonPanel.add(cancelButton);
+
+    saveButton.addActionListener(
+        e -> {
+          try {
+            // Enforce PK constraint
+            String patientId = idField.getText().trim();
+            if (patientId.isEmpty()) {
+              JOptionPane.showMessageDialog(
+                  this,
+                  "Patient ID cannot be empty",
+                  "Validation Error",
+                  JOptionPane.ERROR_MESSAGE);
+              return;
+            }
+
+            String firstName = firstNameField.getText().trim();
+            String surname = surnameField.getText().trim();
+            String postcode = postcodeField.getText().trim();
+            String address = addressField.getText().trim();
+            String phone = phoneField.getText().trim();
+            String email = emailField.getText().trim();
+            String insuranceId = insuranceIdField.getText().trim();
+
+            Patient patient;
+            if (insuranceId.isEmpty()) {
+              patient = new Patient(patientId, firstName, surname, postcode, address, phone, email);
+            } else {
+              patient =
+                  new InsuredPatient(
+                      patientId, firstName, surname, postcode, address, phone, email, insuranceId);
+            }
+
+            if (existingPatient == null) {
+              patientService.addPatient(patient);
+              JOptionPane.showMessageDialog(this, "Patient added successfully");
+            } else {
+              patientService.updatePatient(patient);
+              JOptionPane.showMessageDialog(this, "Patient updated successfully");
+            }
+            loadPatients();
+            dialog.dispose();
+          } catch (Exception ex) {
+            JOptionPane.showMessageDialog(
+                this, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+          }
+        });
+
+    cancelButton.addActionListener(e -> dialog.dispose());
+
+    dialog.add(formPanel, BorderLayout.CENTER);
+    dialog.add(buttonPanel, BorderLayout.SOUTH);
+    dialog.pack();
+    dialog.setLocationRelativeTo(this);
+    dialog.setVisible(true);
   }
 
   private void addFormField(
