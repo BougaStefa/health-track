@@ -2,6 +2,7 @@ package com.bougastefa.gui.panels;
 
 import com.bougastefa.gui.components.ButtonPanel;
 import com.bougastefa.models.Doctor;
+import com.bougastefa.models.InsuredPatient;
 import com.bougastefa.models.Patient;
 import com.bougastefa.services.DoctorService;
 import com.bougastefa.services.PatientService;
@@ -43,7 +44,7 @@ public class PatientPanel extends JPanel {
 
     // Setup table for Patients
     String[] columnNames = {
-      "Patient ID", "First Name", "Surname", "Postcode", "Address", "Phone", "Email"
+      "Patient ID", "First Name", "Surname", "Postcode", "Address", "Phone", "Email", "Insurance ID"
     };
     tableModel =
         new DefaultTableModel(columnNames, 0) {
@@ -75,6 +76,10 @@ public class PatientPanel extends JPanel {
   private void populateTable(List<Patient> patients) {
     tableModel.setRowCount(0);
     for (Patient patient : patients) {
+      String insuranceId = "";
+      if (patient instanceof InsuredPatient) {
+        insuranceId = ((InsuredPatient) patient).getInsuranceId();
+      }
       tableModel.addRow(
           new Object[] {
             patient.getPatientId(),
@@ -83,7 +88,8 @@ public class PatientPanel extends JPanel {
             patient.getPostcode(),
             patient.getAddress(),
             patient.getEmail(),
-            patient.getPhone()
+            patient.getPhone(),
+            insuranceId
           });
     }
   }
@@ -98,6 +104,11 @@ public class PatientPanel extends JPanel {
       String address = (String) tableModel.getValueAt(row, 4);
       String email = (String) tableModel.getValueAt(row, 5);
       String phone = (String) tableModel.getValueAt(row, 6);
+      String insuranceId = (String) tableModel.getValueAt(row, 7);
+      if (insuranceId != null && !insuranceId.isEmpty()) {
+        return new InsuredPatient(
+            patientId, firstName, surname, postcode, address, email, phone, insuranceId);
+      }
       return new Patient(patientId, firstName, surname, postcode, address, email, phone);
     }
     return null;
@@ -125,6 +136,7 @@ public class PatientPanel extends JPanel {
     JTextField addressField = new JTextField(20);
     JTextField emailField = new JTextField(20);
     JTextField phoneField = new JTextField(20);
+    JTextField insuranceIdField = new JTextField(20);
 
     if (existingPatient != null) {
       idField.setText(existingPatient.getPatientId());
@@ -135,67 +147,88 @@ public class PatientPanel extends JPanel {
       addressField.setText(existingPatient.getAddress());
       emailField.setText(existingPatient.getEmail());
       phoneField.setText(existingPatient.getPhone());
-    }
+      if (existingPatient instanceof InsuredPatient) {
+        insuranceIdField.setText(((InsuredPatient) existingPatient).getInsuranceId());
+      }
 
-    addFormField(formPanel, "Patient ID:", idField, gbc, 0);
-    addFormField(formPanel, "First Name:", firstNameField, gbc, 1);
-    addFormField(formPanel, "Surname:", surnameField, gbc, 2);
-    addFormField(formPanel, "Postcode:", postcodeField, gbc, 3);
-    addFormField(formPanel, "Address:", addressField, gbc, 4);
-    addFormField(formPanel, "Email:", emailField, gbc, 5);
-    addFormField(formPanel, "Phone:", phoneField, gbc, 6);
+      addFormField(formPanel, "Patient ID:", idField, gbc, 0);
+      addFormField(formPanel, "First Name:", firstNameField, gbc, 1);
+      addFormField(formPanel, "Surname:", surnameField, gbc, 2);
+      addFormField(formPanel, "Postcode:", postcodeField, gbc, 3);
+      addFormField(formPanel, "Address:", addressField, gbc, 4);
+      addFormField(formPanel, "Email:", emailField, gbc, 5);
+      addFormField(formPanel, "Phone:", phoneField, gbc, 6);
+      addFormField(formPanel, "Insurance ID:", insuranceIdField, gbc, 7);
 
-    // Button panel for save and cancel
-    JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-    JButton saveButton = new JButton("Save");
-    JButton cancelButton = new JButton("Cancel");
-    buttonPanel.add(saveButton);
-    buttonPanel.add(cancelButton);
+      // Button panel for save and cancel
+      JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+      JButton saveButton = new JButton("Save");
+      JButton cancelButton = new JButton("Cancel");
+      buttonPanel.add(saveButton);
+      buttonPanel.add(cancelButton);
 
-    saveButton.addActionListener(
-        e -> {
-          try {
-            // Enforce PK constraint
-            String id = idField.getText().trim();
-            if (id.isEmpty()) {
+      saveButton.addActionListener(
+          e -> {
+            try {
+              // Enforce PK constraint
+              String patientId = idField.getText().trim();
+              if (patientId.isEmpty()) {
+                JOptionPane.showMessageDialog(
+                    this,
+                    "Patient ID cannot be empty",
+                    "Validation Error",
+                    JOptionPane.ERROR_MESSAGE);
+                return;
+              }
+
+              String firstName = firstNameField.getText().trim();
+              String surname = surnameField.getText().trim();
+              String postcode = postcodeField.getText().trim();
+              String address = addressField.getText().trim();
+              String phone = phoneField.getText().trim();
+              String email = emailField.getText().trim();
+              String insuranceId = insuranceIdField.getText().trim();
+
+              Patient patient;
+              if (insuranceId.isEmpty()) {
+                patient =
+                    new Patient(patientId, firstName, surname, postcode, address, phone, email);
+              } else {
+                patient =
+                    new InsuredPatient(
+                        patientId,
+                        firstName,
+                        surname,
+                        postcode,
+                        address,
+                        phone,
+                        email,
+                        insuranceId);
+              }
+
+              if (existingPatient == null) {
+                patientService.addPatient(patient);
+                JOptionPane.showMessageDialog(this, "Patient added successfully");
+              } else {
+                patientService.updatePatient(patient);
+                JOptionPane.showMessageDialog(this, "Patient updated successfully");
+              }
+              loadPatients();
+              dialog.dispose();
+            } catch (Exception ex) {
               JOptionPane.showMessageDialog(
-                  this,
-                  "Patient ID cannot be empty",
-                  "Validation Error",
-                  JOptionPane.ERROR_MESSAGE);
-              return;
+                  this, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             }
-            Patient patient =
-                new Patient(
-                    id,
-                    firstNameField.getText(),
-                    surnameField.getText(),
-                    postcodeField.getText(),
-                    addressField.getText(),
-                    emailField.getText(),
-                    phoneField.getText());
-            if (existingPatient == null) {
-              patientService.addPatient(patient);
-              JOptionPane.showMessageDialog(this, "Patient added successfully");
-            } else {
-              patientService.updatePatient(patient);
-              JOptionPane.showMessageDialog(this, "Patient updated successfully");
-            }
-            loadPatients();
-            dialog.dispose();
-          } catch (Exception ex) {
-            JOptionPane.showMessageDialog(
-                this, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-          }
-        });
+          });
 
-    cancelButton.addActionListener(e -> dialog.dispose());
+      cancelButton.addActionListener(e -> dialog.dispose());
 
-    dialog.add(formPanel, BorderLayout.CENTER);
-    dialog.add(buttonPanel, BorderLayout.SOUTH);
-    dialog.pack();
-    dialog.setLocationRelativeTo(this);
-    dialog.setVisible(true);
+      dialog.add(formPanel, BorderLayout.CENTER);
+      dialog.add(buttonPanel, BorderLayout.SOUTH);
+      dialog.pack();
+      dialog.setLocationRelativeTo(this);
+      dialog.setVisible(true);
+    }
   }
 
   private void addFormField(
