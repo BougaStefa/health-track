@@ -53,6 +53,8 @@ public class InsurancePanel extends JPanel {
     insuranceTable = new JTable(tableModel);
     insuranceTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
     insuranceTable.getTableHeader().setReorderingAllowed(false);
+    insuranceTable.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
+    insuranceTable.setFillsViewportHeight(true);
   }
 
   private void loadInsurances() {
@@ -254,19 +256,15 @@ public class InsurancePanel extends JPanel {
       List<Insurance> insurances = insuranceService.getAllInsurances();
       FilterResult<Insurance> result = new FilterResult<>(insurances);
 
-      if (filters.containsKey("insuranceId")) {
-        result = result.filter(filters.get("insuranceId"), Insurance::getInsuranceId);
-      }
-      if (filters.containsKey("company")) {
-        result = result.filter(filters.get("company"), Insurance::getCompany);
-      }
-      if (filters.containsKey("address")) {
-        result = result.filter(filters.get("address"), Insurance::getAddress);
-      }
-      if (filters.containsKey("phone")) {
-        result = result.filter(filters.get("phone"), Insurance::getPhone);
-      }
-
+      filters.forEach(
+          (key, value) -> {
+            switch (key) {
+              case "insuranceId" -> result.filter(value, Insurance::getInsuranceId);
+              case "company" -> result.filter(value, Insurance::getCompany);
+              case "address" -> result.filter(value, Insurance::getAddress);
+              case "phone" -> result.filter(value, Insurance::getPhone);
+            }
+          });
       populateTable(result.getResults());
     } catch (Exception ex) {
       JOptionPane.showMessageDialog(

@@ -12,9 +12,9 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 
 public class PrescriptionPanel extends JPanel {
-  private PrescriptionService prescriptionService;
-  private DefaultTableModel tableModel;
-  private JTable prescriptionTable;
+  private final PrescriptionService prescriptionService;
+  private final DefaultTableModel tableModel;
+  private final JTable prescriptionTable;
   private final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
   public PrescriptionPanel() {

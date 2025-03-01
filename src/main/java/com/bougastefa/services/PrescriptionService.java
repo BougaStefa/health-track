@@ -28,10 +28,14 @@ public class PrescriptionService {
   // Retrieve all prescriptions
   public List<Prescription> getAllPrescriptions() {
     try {
-      return prescriptionDAO.getAllPrescriptions();
+      List<Prescription> prescriptions = prescriptionDAO.getAllPrescriptions();
+      if (prescriptions == null) {
+        return Collections.emptyList();
+      }
+      return Collections.unmodifiableList(prescriptions);
     } catch (SQLException e) {
       logger.error("Error fetching prescriptions", e);
-      return List.of(); // Return an empty list on error
+      return Collections.emptyList();
     }
   }
 
