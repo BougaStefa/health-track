@@ -3,6 +3,7 @@ package com.bougastefa.services;
 import com.bougastefa.database.PrescriptionDAO;
 import com.bougastefa.models.Prescription;
 import java.sql.SQLException;
+import java.util.Collections;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
