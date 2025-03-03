@@ -1,15 +1,14 @@
 package com.bougastefa.gui.panels;
 
 import com.bougastefa.gui.components.ButtonPanel;
-import com.bougastefa.gui.components.FilterDialog;
 import com.bougastefa.gui.components.FilterResult;
-import com.bougastefa.gui.components.FilterableField;
+import com.bougastefa.gui.components.FormDialog;
 import com.bougastefa.models.Drug;
 import com.bougastefa.services.DrugService;
 import java.awt.*;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 
@@ -129,58 +128,44 @@ public class DrugPanel extends JPanel {
   }
 
   private void showDrugDialog(Drug existingDrug) {
-    JDialog dialog =
-        new JDialog(
+    // Create FormDialog.Builder
+    FormDialog.Builder builder =
+        new FormDialog.Builder(
             (Frame) SwingUtilities.getWindowAncestor(this),
-            existingDrug == null ? "Add Drug" : "Edit Drug",
-            true);
-    dialog.setLayout(new BorderLayout(10, 10));
+            existingDrug == null ? "Add Drug" : "Edit Drug");
 
-    // Form panel for entering drug details
-    JPanel formPanel = new JPanel(new GridBagLayout());
-    formPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-    GridBagConstraints gbc = new GridBagConstraints();
-    gbc.fill = GridBagConstraints.HORIZONTAL;
-    gbc.insets = new Insets(5, 5, 5, 5);
+    // Add form fields with initial values if editing
+    String idValue = existingDrug != null ? existingDrug.getDrugId() : "";
+    String nameValue = existingDrug != null ? existingDrug.getName() : "";
+    String sideEffectsValue = existingDrug != null ? existingDrug.getSideEffects() : "";
+    String benefitsValue = existingDrug != null ? existingDrug.getBenefits() : "";
 
-    JTextField idField = new JTextField(20);
-    JTextField nameField = new JTextField(20);
-    JTextField sideEffectsField = new JTextField(20);
-    JTextField benefitsField = new JTextField(20);
+    builder.addTextField("Drug ID", "drugId", idValue);
+    builder.addTextField("Name", "name", nameValue);
+    builder.addTextField("Side Effects", "sideEffects", sideEffectsValue);
+    builder.addTextField("Benefits", "benefits", benefitsValue);
 
-    if (existingDrug != null) {
-      idField.setText(existingDrug.getDrugId());
-      idField.setEditable(false);
-      nameField.setText(existingDrug.getName());
-      sideEffectsField.setText(existingDrug.getSideEffects());
-      benefitsField.setText(existingDrug.getBenefits());
-    }
-
-    addFormField(formPanel, "Drug ID:", idField, gbc, 0);
-    addFormField(formPanel, "Name:", nameField, gbc, 1);
-    addFormField(formPanel, "Side Effects:", sideEffectsField, gbc, 2);
-    addFormField(formPanel, "Benefits:", benefitsField, gbc, 3);
-
-    // Button panel for save and cancel
-    JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-    JButton saveButton = new JButton("Save");
-    JButton cancelButton = new JButton("Cancel");
-    buttonPanel.add(saveButton);
-    buttonPanel.add(cancelButton);
-
-    saveButton.addActionListener(
-        e -> {
+    // Define save action
+    builder.onSave(
+        formData -> {
           try {
-            // Enforce PK constraint
-            String id = idField.getText().trim();
+            // Extract form data
+            String id = (String) formData.get("drugId");
+            String name = (String) formData.get("name");
+            String sideEffects = (String) formData.get("sideEffects");
+            String benefits = (String) formData.get("benefits");
+
+            // Validate drug ID
             if (id.isEmpty()) {
               JOptionPane.showMessageDialog(
                   this, "Drug ID cannot be empty", "Validation Error", JOptionPane.ERROR_MESSAGE);
               return;
             }
-            Drug drug =
-                new Drug(
-                    id, nameField.getText(), sideEffectsField.getText(), benefitsField.getText());
+
+            // Create drug object
+            Drug drug = new Drug(id, name, sideEffects, benefits);
+
+            // Add or update drug
             if (existingDrug == null) {
               drugService.addDrug(drug);
               JOptionPane.showMessageDialog(this, "Drug added successfully");
@@ -188,69 +173,72 @@ public class DrugPanel extends JPanel {
               drugService.updateDrug(drug);
               JOptionPane.showMessageDialog(this, "Drug updated successfully");
             }
+
+            // Refresh display
             loadDrugs();
-            dialog.dispose();
           } catch (Exception ex) {
             JOptionPane.showMessageDialog(
                 this, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
           }
         });
 
-    cancelButton.addActionListener(e -> dialog.dispose());
+    // Create and show the dialog
+    FormDialog dialog = builder.build();
 
-    dialog.add(formPanel, BorderLayout.CENTER);
-    dialog.add(buttonPanel, BorderLayout.SOUTH);
-    dialog.pack();
-    dialog.setLocationRelativeTo(this);
+    // Disable ID field if editing
+    if (existingDrug != null) {
+      JComponent idField = dialog.getField("drugId");
+      if (idField instanceof JTextField) {
+        ((JTextField) idField).setEditable(false);
+      }
+    }
+
     dialog.setVisible(true);
-  }
-
-  private void addFormField(
-      JPanel panel, String label, JComponent field, GridBagConstraints gbc, int row) {
-    gbc.gridx = 0;
-    gbc.gridy = row;
-    gbc.weightx = 0;
-    panel.add(new JLabel(label), gbc);
-
-    gbc.gridx = 1;
-    gbc.weightx = 1;
-    panel.add(field, gbc);
   }
 
   private void showAdvancedFilterDialog() {
-    List<FilterableField> fields =
-        Arrays.asList(
-            new FilterableField("Drug ID", "drugId"),
-            new FilterableField("Name", "name"),
-            new FilterableField("Side Effects", "sideEffects"),
-            new FilterableField("Benefits", "benefits"));
+    // Create a FormDialog.Builder for the filter dialog
+    FormDialog.Builder builder =
+        new FormDialog.Builder((Frame) SwingUtilities.getWindowAncestor(this), "Advanced Filter");
 
-    FilterDialog dialog =
-        new FilterDialog(
-            (Frame) SwingUtilities.getWindowAncestor(this),
-            "Advanced Filter",
-            fields,
-            this::applyFilters);
+    // Add filter fields
+    builder.addTextField("Drug ID", "drugId");
+    builder.addTextField("Name", "name");
+    builder.addTextField("Side Effects", "sideEffects");
+    builder.addTextField("Benefits", "benefits");
 
+    // Define filter action
+    builder.onSave(this::applyFilters);
+
+    // Create and customize the dialog
+    FormDialog dialog = builder.build();
+    dialog.setSaveButtonText("Filter");
+    dialog.setCancelButtonText("Cancel");
     dialog.setVisible(true);
   }
 
-  private void applyFilters(Map<String, String> filters) {
+  private void applyFilters(Map<String, Object> formData) {
     try {
       List<Drug> drugs = drugService.getAllDrugs();
       FilterResult<Drug> result = new FilterResult<>(drugs);
 
-      if (filters.containsKey("drugId")) {
-        result = result.filter(filters.get("drugId"), Drug::getDrugId);
-      }
-      if (filters.containsKey("name")) {
-        result = result.filter(filters.get("name"), Drug::getName);
-      }
-      if (filters.containsKey("sideEffects")) {
-        result = result.filter(filters.get("sideEffects"), Drug::getSideEffects);
-      }
-      if (filters.containsKey("benefits")) {
-        result = result.filter(filters.get("benefits"), Drug::getBenefits);
+      // Define filter configurations for each field
+      Map<String, Function<Drug, String>> filterMappings =
+          Map.of(
+              "drugId", Drug::getDrugId,
+              "name", Drug::getName,
+              "sideEffects", Drug::getSideEffects,
+              "benefits", Drug::getBenefits);
+
+      // Apply filters for non-empty fields
+      for (Map.Entry<String, Function<Drug, String>> entry : filterMappings.entrySet()) {
+        String fieldName = entry.getKey();
+        Function<Drug, String> getter = entry.getValue();
+
+        String filterValue = (String) formData.get(fieldName);
+        if (filterValue != null && !filterValue.isEmpty()) {
+          result = result.filter(filterValue, getter);
+        }
       }
 
       populateTable(result.getResults());

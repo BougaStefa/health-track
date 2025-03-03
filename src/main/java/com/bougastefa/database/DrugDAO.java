@@ -85,4 +85,42 @@ public class DrugDAO {
       stmt.executeUpdate();
     }
   }
+
+  // Helper method to retrieve drugs by a given column using partial matching.
+  private List<Drug> getDrugsByColumn(String column, String value) throws SQLException {
+    List<Drug> drugs = new ArrayList<>();
+    String sql = "SELECT * FROM Drug WHERE " + column + " LIKE ?";
+    try (Connection conn = DatabaseConnection.getConnection();
+        PreparedStatement stmt = conn.prepareStatement(sql)) {
+      stmt.setString(1, "%" + value + "%");
+      try (ResultSet rs = stmt.executeQuery()) {
+        while (rs.next()) {
+          Drug drug =
+              new Drug(
+                  rs.getString("drugID"),
+                  rs.getString("drugname"),
+                  rs.getString("sideeffects"),
+                  rs.getString("benefits"));
+          drugs.add(drug);
+        }
+      }
+    }
+
+    return drugs;
+  }
+
+  // Retrieve drugs by name using partial matching
+  public List<Drug> getDrugsByName(String name) throws SQLException {
+    return getDrugsByColumn("drugname", name);
+  }
+
+  // Retrieve drugs by side effects using partial matching
+  public List<Drug> getDrugsBySideEffects(String sideEffects) throws SQLException {
+    return getDrugsByColumn("sideeffects", sideEffects);
+  }
+
+  // Retrieve drugs by benefits using partial matching
+  public List<Drug> getDrugsByBenefits(String benefits) throws SQLException {
+    return getDrugsByColumn("benefits", benefits);
+  }
 }
