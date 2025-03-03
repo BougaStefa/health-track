@@ -10,6 +10,7 @@ public class PatientDAO {
   // Insert a new patient
   public void addPatient(Patient patient) throws SQLException {
     String sql;
+    // Check if the patient is an insured patient and insert the insurance ID if it is
     if (patient instanceof InsuredPatient) {
       sql =
           "INSERT INTO Patient (patientID, firstname, surname, postcode, address, phone, email,"
@@ -20,6 +21,7 @@ public class PatientDAO {
               + " VALUES (?, ?, ?, ?, ?, ?, ?)";
     }
 
+    // Try-with-resources block to automatically close the connection
     try (Connection conn = DatabaseConnection.getConnection();
         PreparedStatement stmt = conn.prepareStatement(sql)) {
       stmt.setString(1, patient.getPatientId());
@@ -30,6 +32,7 @@ public class PatientDAO {
       stmt.setString(6, patient.getPhone());
       stmt.setString(7, patient.getEmail());
 
+      // Set the insurance ID if the patient is an insured patient
       if (patient instanceof InsuredPatient) {
         InsuredPatient insuredPatient = (InsuredPatient) patient;
         stmt.setString(8, insuredPatient.getInsuranceId());
@@ -43,10 +46,12 @@ public class PatientDAO {
   public List<Patient> getAllPatients() throws SQLException {
     List<Patient> patients = new ArrayList<>();
     String sql = "SELECT * FROM Patient";
+    // Try-with-resources block to automatically close the connection
     try (Connection conn = DatabaseConnection.getConnection();
         Statement stmt = conn.createStatement();
         ResultSet rs = stmt.executeQuery(sql)) {
       while (rs.next()) {
+        // Create a new patient object for each row
         String patientid = rs.getString("patientID");
         String firstname = rs.getString("firstname");
         String surname = rs.getString("surname");
@@ -57,6 +62,7 @@ public class PatientDAO {
         String insuranceid = rs.getString("insuranceID");
 
         Patient patient;
+        // Check if the patient is an insured patient and create the appropriate object
         if (insuranceid != null) {
           patient =
               new InsuredPatient(
@@ -73,12 +79,14 @@ public class PatientDAO {
   // Retrieve patient by ID
   public Patient getPatientById(String patientId) throws SQLException {
     String sql = "SELECT * FROM Patient WHERE patientID = ?";
+    // Try-with-resources block to automatically close the connection
     try (Connection conn = DatabaseConnection.getConnection();
         PreparedStatement stmt = conn.prepareStatement(sql)) {
       stmt.setString(1, patientId);
       try (ResultSet rs = stmt.executeQuery()) {
         if (rs.next()) {
           String insuranceId = rs.getString("insuranceID");
+          // Check if the patient is an insured patient and create the appropriate object
           if (insuranceId != null) {
             return new InsuredPatient(
                 rs.getString("patientID"),
@@ -108,6 +116,7 @@ public class PatientDAO {
   // Update a patient
   public void updatePatient(Patient patient) throws SQLException {
     String sql;
+    // Check if the patient is an insured patient and update the insurance ID if it is
     if (patient instanceof InsuredPatient) {
       sql =
           "UPDATE Patient SET firstname = ?, surname = ?, postcode = ?, address = ?, phone = ?,"
@@ -118,6 +127,7 @@ public class PatientDAO {
               + " email = ? WHERE patientID = ?";
     }
 
+    // Try-with-resources block to automatically close the connection
     try (Connection conn = DatabaseConnection.getConnection();
         PreparedStatement stmt = conn.prepareStatement(sql)) {
       stmt.setString(1, patient.getFirstName());
@@ -127,6 +137,7 @@ public class PatientDAO {
       stmt.setString(5, patient.getPhone());
       stmt.setString(6, patient.getEmail());
 
+      // Set the insurance ID if the patient is an insured patient
       if (patient instanceof InsuredPatient) {
         InsuredPatient insuredPatient = (InsuredPatient) patient;
         stmt.setString(7, insuredPatient.getInsuranceId());
@@ -142,6 +153,7 @@ public class PatientDAO {
   // Delete a patient
   public void deletePatient(String patientId) throws SQLException {
     String sql = "DELETE FROM Patient WHERE patientid = ?";
+    // Try-with-resources block to automatically close the connection
     try (Connection conn = DatabaseConnection.getConnection();
         PreparedStatement stmt = conn.prepareStatement(sql)) {
       stmt.setString(1, patientId);

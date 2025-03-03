@@ -9,9 +9,11 @@ import java.util.List;
 public class VisitDAO {
   // Insert a new visit
   public void addVisit(Visit visit) throws SQLException {
+    // SQL query to insert a new visit
     String sql =
         "INSERT INTO Visit (patientID, doctorID, dateOfVisit, symptoms, diagnosis) VALUES (?, ?,"
             + " ?, ?, ?)";
+    // Try-with-resources block to automatically close the connection
     try (Connection conn = DatabaseConnection.getConnection();
         PreparedStatement stmt = conn.prepareStatement(sql)) {
       stmt.setString(1, visit.getPatientId());
@@ -27,9 +29,11 @@ public class VisitDAO {
   public List<Visit> getAllVisits() throws SQLException {
     List<Visit> visits = new ArrayList<>();
     String sql = "SELECT * FROM Visit";
+    // Try-with-resources block to automatically close the connection
     try (Connection conn = DatabaseConnection.getConnection();
         Statement stmt = conn.createStatement();
         ResultSet rs = stmt.executeQuery(sql)) {
+      // Iterate over the result set and create a new visit object for each row
       while (rs.next()) {
         Visit visit =
             new Visit(
@@ -47,11 +51,14 @@ public class VisitDAO {
   // Retrieve visit by ID(s)
   public Visit getVisit(String patientId, String doctorId, LocalDate dateOfVisit)
       throws SQLException {
+    // SQL query to retrieve a visit by patient ID, doctor ID, and date of visit (composite key)
     String sql = "SELECT * FROM Visit WHERE patientID = ? AND doctorID = ? AND dateOfVisit = ?";
+    // Try-with-resources block to automatically close the connection
     try (Connection conn = DatabaseConnection.getConnection();
         PreparedStatement stmt = conn.prepareStatement(sql)) {
       stmt.setString(1, patientId);
       stmt.setString(2, doctorId);
+      // Convert LocalDate to SQL Date
       stmt.setDate(3, Date.valueOf(dateOfVisit));
       try (ResultSet rs = stmt.executeQuery()) {
         if (rs.next()) {
@@ -72,6 +79,7 @@ public class VisitDAO {
     String sql =
         "UPDATE Visit SET symptoms = ?, diagnosis = ? WHERE patientID = ? AND doctorID = ? AND"
             + " dateOfVisit = ?";
+    // Try-with-resources block to automatically close the connection
     try (Connection conn = DatabaseConnection.getConnection();
         PreparedStatement stmt = conn.prepareStatement(sql)) {
       stmt.setString(1, visit.getSymptoms());
@@ -87,6 +95,7 @@ public class VisitDAO {
   public void deleteVisit(String patientId, String doctorId, LocalDate dateOfVisit)
       throws SQLException {
     String sql = "DELETE FROM Visit WHERE patientID = ? AND doctorID = ? AND dateOfVisit = ?";
+    // Try-with-resources block to automatically close the connection
     try (Connection conn = DatabaseConnection.getConnection();
         PreparedStatement stmt = conn.prepareStatement(sql)) {
       stmt.setString(1, patientId);
@@ -98,6 +107,9 @@ public class VisitDAO {
 
   // Find Primary Doctor based on amount of visit for patient
   public String getPrimaryDoctorId(String patientId) throws SQLException {
+    /* SQL query to retrieve the doctor with the most visits for a patient
+    Not checking if there are multiple doctors with the same number of visits
+    If there are multiple doctors with the same number of visits, the first one will be returned */
     String sql =
         """
             SELECT doctorID, COUNT(*) as visit_count
@@ -108,6 +120,7 @@ public class VisitDAO {
             LIMIT 1
         """;
 
+    // Try-with-resources block to automatically close the connection
     try (Connection conn = DatabaseConnection.getConnection();
         PreparedStatement stmt = conn.prepareStatement(sql)) {
       stmt.setString(1, patientId);

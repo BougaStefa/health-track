@@ -9,6 +9,7 @@ public class InsuranceDAO {
   // Insert a new insurance
   public void addInsurance(Insurance insurance) throws SQLException {
     String sql = "INSERT INTO Insurance (insuranceID, company, address, phone) VALUES (?, ?, ?, ?)";
+    // Try-with-resources block to automatically close the connection
     try (Connection conn = DatabaseConnection.getConnection();
         PreparedStatement stmt = conn.prepareStatement(sql)) {
       stmt.setString(1, insurance.getInsuranceId());
@@ -23,10 +24,12 @@ public class InsuranceDAO {
   public List<Insurance> getAllInsurances() throws SQLException {
     List<Insurance> insurances = new ArrayList<>();
     String sql = "SELECT * FROM Insurance";
+    // Try-with-resources block to automatically close the connection
     try (Connection conn = DatabaseConnection.getConnection();
         Statement stmt = conn.createStatement();
         ResultSet rs = stmt.executeQuery(sql)) {
       while (rs.next()) {
+        // Create a new insurance object for each row
         Insurance insurance =
             new Insurance(
                 rs.getString("insuranceID"),
@@ -42,6 +45,7 @@ public class InsuranceDAO {
   // Retrieve insurance by ID
   public Insurance getInsuranceById(String insuranceId) throws SQLException {
     String sql = "SELECT * FROM Insurance WHERE insuranceID = ?";
+    // Try-with-resources block to automatically close the connection
     try (Connection conn = DatabaseConnection.getConnection();
         PreparedStatement stmt = conn.prepareStatement(sql)) {
       stmt.setString(1, insuranceId);
@@ -61,6 +65,7 @@ public class InsuranceDAO {
   // Update an insurance
   public void updateInsurance(Insurance insurance) throws SQLException {
     String sql = "UPDATE Insurance SET company = ?, address = ?, phone = ? WHERE insuranceID = ?";
+    // Try-with-resources block to automatically close the connection
     try (Connection conn = DatabaseConnection.getConnection();
         PreparedStatement stmt = conn.prepareStatement(sql)) {
       stmt.setString(1, insurance.getCompany());
@@ -74,6 +79,7 @@ public class InsuranceDAO {
   // Delete an insurance
   public void deleteInsurance(String insuranceId) throws SQLException {
     String sql = "DELETE FROM Insurance WHERE insuranceID = ?";
+    // Try-with-resources block to automatically close the connection
     try (Connection conn = DatabaseConnection.getConnection();
         PreparedStatement stmt = conn.prepareStatement(sql)) {
       stmt.setString(1, insuranceId);

@@ -10,6 +10,7 @@ public class DoctorDAO {
   // Insert a new doctor
   public void addDoctor(Doctor doctor) throws SQLException {
     String sql;
+    // Check if the doctor is a specialist, create the appropriate SQL query
     if (doctor instanceof Specialist) {
       sql =
           "INSERT INTO Doctor (doctorID, firstname, surname, address, email, hospital,"
@@ -20,6 +21,7 @@ public class DoctorDAO {
               + " ?, ?, ?, ?, ?)";
     }
 
+    // Connection and statement are automatically closed after the try block
     try (Connection conn = DatabaseConnection.getConnection();
         PreparedStatement stmt = conn.prepareStatement(sql)) {
       stmt.setString(1, doctor.getDoctorId());
@@ -29,6 +31,7 @@ public class DoctorDAO {
       stmt.setString(5, doctor.getEmail());
       stmt.setString(6, doctor.getHospital());
 
+      // If the doctor is a specialist, set the specialization
       if (doctor instanceof Specialist) {
         Specialist specialist = (Specialist) doctor;
         stmt.setString(7, specialist.getSpecialization());
@@ -38,13 +41,15 @@ public class DoctorDAO {
     }
   }
 
-  // Retrieve all doctors
+  // Retrieve all doctors from the database
   public List<Doctor> getAllDoctors() throws SQLException {
     List<Doctor> doctors = new ArrayList<>();
     String sql = "SELECT * FROM Doctor";
+    // Connection, statement and result set are automatically closed after the try block
     try (Connection conn = DatabaseConnection.getConnection();
         Statement stmt = conn.createStatement();
         ResultSet rs = stmt.executeQuery(sql)) {
+      // Iterate over the result set and create a doctor object for each row
       while (rs.next()) {
         String doctorId = rs.getString("doctorID");
         String firstname = rs.getString("firstname");
@@ -55,6 +60,7 @@ public class DoctorDAO {
         String specialization = rs.getString("specialization");
 
         Doctor doctor;
+        // Check if the doctor is a specialist and create the appropriate object
         if (specialization != null) {
           doctor =
               new Specialist(
@@ -67,15 +73,18 @@ public class DoctorDAO {
     }
     return doctors;
   }
+
   // Retrieve doctor by ID
   public Doctor getDoctorById(String doctorId) throws SQLException {
     String sql = "SELECT * FROM Doctor WHERE doctorID = ?";
+    // Connection, statement and result set are automatically closed after the try block
     try (Connection conn = DatabaseConnection.getConnection();
         PreparedStatement stmt = conn.prepareStatement(sql)) {
       stmt.setString(1, doctorId);
       try (ResultSet rs = stmt.executeQuery()) {
         if (rs.next()) {
           String specialization = rs.getString("specialization");
+          // Check if the doctor is a specialist and create the appropriate object
           if (specialization != null) {
             return new Specialist(
                 rs.getString("doctorID"),
@@ -103,6 +112,7 @@ public class DoctorDAO {
   // Update a doctor
   public void updateDoctor(Doctor doctor) throws SQLException {
     String sql;
+    // Check if the doctor is a specialist, create the appropriate SQL query
     if (doctor instanceof Specialist) {
       sql =
           "UPDATE Doctor SET firstname = ?, surname = ?, address = ?, email = ?, hospital = ?,"
@@ -113,6 +123,7 @@ public class DoctorDAO {
               + " doctorID = ?";
     }
 
+    // Connection and statement are automatically closed after the try block
     try (Connection conn = DatabaseConnection.getConnection();
         PreparedStatement stmt = conn.prepareStatement(sql)) {
       stmt.setString(1, doctor.getFirstName());
@@ -121,6 +132,7 @@ public class DoctorDAO {
       stmt.setString(4, doctor.getEmail());
       stmt.setString(5, doctor.getHospital());
 
+      // If the doctor is a specialist, set the specialization
       if (doctor instanceof Specialist) {
         Specialist specialist = (Specialist) doctor;
         stmt.setString(6, specialist.getSpecialization());
@@ -136,6 +148,7 @@ public class DoctorDAO {
   // Delete a doctor
   public void deleteDoctor(String doctorId) throws SQLException {
     String sql = "DELETE FROM Doctor WHERE doctorID = ?";
+    // Connection and statement are automatically closed after the try block
     try (Connection conn = DatabaseConnection.getConnection();
         PreparedStatement stmt = conn.prepareStatement(sql)) {
       stmt.setString(1, doctorId);

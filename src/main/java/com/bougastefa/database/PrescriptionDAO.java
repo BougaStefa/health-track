@@ -11,6 +11,7 @@ public class PrescriptionDAO {
     String sql =
         "INSERT INTO Prescription (prescriptionID, dateprescribed, dosage, duration, comment,"
             + " drugID, doctorID, patientID) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+    // Try-with-resources block to automatically close the connection
     try (Connection conn = DatabaseConnection.getConnection();
         PreparedStatement stmt = conn.prepareStatement(sql)) {
       stmt.setString(1, prescription.getPrescriptionId());
@@ -28,12 +29,15 @@ public class PrescriptionDAO {
   // Retrieve all prescriptions
   public List<Prescription> getAllPrescriptions() throws SQLException {
     List<Prescription> prescriptions = new ArrayList<>();
+    // Retrieve all prescriptions in descending order of date prescribed
     String sql = "SELECT * FROM Prescription ORDER BY dateprescribed DESC";
 
+    // Try-with-resources block to automatically close the connection
     try (Connection conn = DatabaseConnection.getConnection();
         Statement stmt = conn.createStatement();
         ResultSet rs = stmt.executeQuery(sql)) {
       while (rs.next()) {
+        // Create a new prescription object for each row
         Prescription prescription =
             new Prescription(
                 rs.getString("prescriptionID"),
@@ -53,6 +57,7 @@ public class PrescriptionDAO {
   // Retrieve prescription by ID
   public Prescription getPrescriptionById(String prescriptionId) throws SQLException {
     String sql = "SELECT * FROM Prescription WHERE prescriptionID = ?";
+    // Try-with-resources block to automatically close the connection
     try (Connection conn = DatabaseConnection.getConnection();
         PreparedStatement stmt = conn.prepareStatement(sql)) {
       stmt.setString(1, prescriptionId);
@@ -78,6 +83,7 @@ public class PrescriptionDAO {
     String sql =
         "UPDATE Prescription SET dateprescribed = ?, dosage = ?, duration = ?, comment = ?, drugID"
             + " = ?, doctorID = ?, patientID = ? WHERE prescriptionID = ?";
+    // Try-with-resources block to automatically close the connection
     try (Connection conn = DatabaseConnection.getConnection();
         PreparedStatement stmt = conn.prepareStatement(sql)) {
       stmt.setDate(1, Date.valueOf(prescription.getDateOfPrescribe()));
