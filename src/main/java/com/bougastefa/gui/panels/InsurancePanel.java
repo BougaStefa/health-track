@@ -1,15 +1,14 @@
 package com.bougastefa.gui.panels;
 
 import com.bougastefa.gui.components.ButtonPanel;
-import com.bougastefa.gui.components.FilterDialog;
 import com.bougastefa.gui.components.FilterResult;
-import com.bougastefa.gui.components.FilterableField;
+import com.bougastefa.gui.components.FormDialog;
 import com.bougastefa.models.Insurance;
 import com.bougastefa.services.InsuranceService;
 import java.awt.*;
-import java.util.Arrays;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
+import java.util.function.Function;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 
@@ -141,50 +140,34 @@ public class InsurancePanel extends JPanel {
   }
 
   private void showInsuranceDialog(Insurance existingInsurance) {
-    JDialog dialog =
-        new JDialog(
+    // Create FormDialog.Builder
+    FormDialog.Builder builder =
+        new FormDialog.Builder(
             (Frame) SwingUtilities.getWindowAncestor(this),
-            existingInsurance == null ? "Add Insurance" : "Edit Insurance",
-            true);
-    dialog.setLayout(new BorderLayout(10, 10));
+            existingInsurance == null ? "Add Insurance" : "Edit Insurance");
 
-    // Form panel for entering insurance details
-    JPanel formPanel = new JPanel(new GridBagLayout());
-    formPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-    GridBagConstraints gbc = new GridBagConstraints();
-    gbc.fill = GridBagConstraints.HORIZONTAL;
-    gbc.insets = new Insets(5, 5, 5, 5);
+    // Add form fields with initial values if editing
+    String idValue = existingInsurance != null ? existingInsurance.getInsuranceId() : "";
+    String companyValue = existingInsurance != null ? existingInsurance.getCompany() : "";
+    String addressValue = existingInsurance != null ? existingInsurance.getAddress() : "";
+    String phoneValue = existingInsurance != null ? existingInsurance.getPhone() : "";
 
-    JTextField idField = new JTextField(20);
-    JTextField companyField = new JTextField(20);
-    JTextField addressField = new JTextField(20);
-    JTextField phoneField = new JTextField(20);
+    builder.addTextField("Insurance ID", "insuranceId", idValue);
+    builder.addTextField("Company", "company", companyValue);
+    builder.addTextField("Address", "address", addressValue);
+    builder.addTextField("Phone", "phone", phoneValue);
 
-    if (existingInsurance != null) {
-      idField.setText(existingInsurance.getInsuranceId());
-      idField.setEditable(false);
-      companyField.setText(existingInsurance.getCompany());
-      addressField.setText(existingInsurance.getAddress());
-      phoneField.setText(existingInsurance.getPhone());
-    }
-
-    addFormField(formPanel, "Insurance ID:", idField, gbc, 0);
-    addFormField(formPanel, "Company:", companyField, gbc, 1);
-    addFormField(formPanel, "Address:", addressField, gbc, 2);
-    addFormField(formPanel, "Phone:", phoneField, gbc, 3);
-
-    // Button panel for save and cancel
-    JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-    JButton saveButton = new JButton("Save");
-    JButton cancelButton = new JButton("Cancel");
-    buttonPanel.add(saveButton);
-    buttonPanel.add(cancelButton);
-
-    saveButton.addActionListener(
-        e -> {
+    // Define save action
+    builder.onSave(
+        formData -> {
           try {
-            // Enforce PK constraint
-            String id = idField.getText().trim();
+            // Extract form data
+            String id = (String) formData.get("insuranceId");
+            String company = (String) formData.get("company");
+            String address = (String) formData.get("address");
+            String phone = (String) formData.get("phone");
+
+            // Validate insurance ID
             if (id.isEmpty()) {
               JOptionPane.showMessageDialog(
                   this,
@@ -194,9 +177,10 @@ public class InsurancePanel extends JPanel {
               return;
             }
 
-            Insurance insurance =
-                new Insurance(
-                    id, companyField.getText(), addressField.getText(), phoneField.getText());
+            // Create insurance object
+            Insurance insurance = new Insurance(id, company, address, phone);
+
+            // Add or update insurance
             if (existingInsurance == null) {
               insuranceService.addInsurance(insurance);
               JOptionPane.showMessageDialog(this, "Insurance added successfully");
@@ -204,67 +188,74 @@ public class InsurancePanel extends JPanel {
               insuranceService.updateInsurance(insurance);
               JOptionPane.showMessageDialog(this, "Insurance updated successfully");
             }
+
+            // Refresh display
             loadInsurances();
-            dialog.dispose();
           } catch (Exception ex) {
             JOptionPane.showMessageDialog(
                 this, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
           }
         });
 
-    cancelButton.addActionListener(e -> dialog.dispose());
+    // Create and show the dialog
+    FormDialog dialog = builder.build();
 
-    dialog.add(formPanel, BorderLayout.CENTER);
-    dialog.add(buttonPanel, BorderLayout.SOUTH);
-    dialog.pack();
-    dialog.setLocationRelativeTo(this);
+    // Disable ID field if editing
+    if (existingInsurance != null) {
+      JComponent idField = dialog.getField("insuranceId");
+      if (idField instanceof JTextField) {
+        ((JTextField) idField).setEditable(false);
+      }
+    }
+
     dialog.setVisible(true);
-  }
-
-  private void addFormField(
-      JPanel panel, String label, JComponent field, GridBagConstraints gbc, int row) {
-    gbc.gridx = 0;
-    gbc.gridy = row;
-    gbc.weightx = 0;
-    panel.add(new JLabel(label), gbc);
-
-    gbc.gridx = 1;
-    gbc.weightx = 1;
-    panel.add(field, gbc);
   }
 
   private void showAdvancedFilterDialog() {
-    List<FilterableField> fields =
-        Arrays.asList(
-            new FilterableField("ID", "insuranceId"),
-            new FilterableField("Company", "company"),
-            new FilterableField("Address", "address"),
-            new FilterableField("Phone", "phone"));
+    // Create a FormDialog.Builder for the filter dialog
+    FormDialog.Builder builder =
+        new FormDialog.Builder((Frame) SwingUtilities.getWindowAncestor(this), "Advanced Filter");
 
-    FilterDialog dialog =
-        new FilterDialog(
-            (Frame) SwingUtilities.getWindowAncestor(this),
-            "Advanced Filter",
-            fields,
-            this::applyFilters);
+    // Add filter fields
+    builder.addTextField("Insurance ID", "insuranceId");
+    builder.addTextField("Company", "company");
+    builder.addTextField("Address", "address");
+    builder.addTextField("Phone", "phone");
 
+    // Define filter action
+    builder.onSave(this::applyFilters);
+
+    // Create and customize the dialog
+    FormDialog dialog = builder.build();
+    dialog.setSaveButtonText("Filter");
+    dialog.setCancelButtonText("Cancel");
     dialog.setVisible(true);
   }
 
-  private void applyFilters(Map<String, String> filters) {
+  private void applyFilters(Map<String, Object> formData) {
     try {
       List<Insurance> insurances = insuranceService.getAllInsurances();
       FilterResult<Insurance> result = new FilterResult<>(insurances);
 
-      filters.forEach(
-          (key, value) -> {
-            switch (key) {
-              case "insuranceId" -> result.filter(value, Insurance::getInsuranceId);
-              case "company" -> result.filter(value, Insurance::getCompany);
-              case "address" -> result.filter(value, Insurance::getAddress);
-              case "phone" -> result.filter(value, Insurance::getPhone);
-            }
-          });
+      // Define filter configurations for each field
+      Map<String, Function<Insurance, String>> filterMappings =
+          Map.of(
+              "insuranceId", Insurance::getInsuranceId,
+              "company", Insurance::getCompany,
+              "address", Insurance::getAddress,
+              "phone", Insurance::getPhone);
+
+      // Apply filters for non-empty fields
+      for (Map.Entry<String, Function<Insurance, String>> entry : filterMappings.entrySet()) {
+        String fieldName = entry.getKey();
+        Function<Insurance, String> getter = entry.getValue();
+
+        String filterValue = (String) formData.get(fieldName);
+        if (filterValue != null && !filterValue.isEmpty()) {
+          result = result.filter(filterValue, getter);
+        }
+      }
+
       populateTable(result.getResults());
     } catch (Exception ex) {
       JOptionPane.showMessageDialog(
