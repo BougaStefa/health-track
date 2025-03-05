@@ -1,6 +1,8 @@
 package com.bougastefa.gui.panels;
 
 import com.bougastefa.gui.components.ButtonPanel;
+import com.bougastefa.gui.components.FilterResult;
+import com.bougastefa.gui.components.FormDialog;
 import com.bougastefa.models.Prescription;
 import com.bougastefa.services.PrescriptionService;
 import java.awt.*;
@@ -8,6 +10,8 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 
@@ -24,15 +28,7 @@ public class PrescriptionPanel extends JPanel {
     // Replace custom button panels with ButtonPanel component
     ButtonPanel buttonPanel = new ButtonPanel("Prescription");
     buttonPanel.setAddButtonListener(e -> showPrescriptionDialog(null));
-    buttonPanel.setEditButtonListener(
-        e -> {
-          Prescription selectedPrescription = getSelectedPrescription();
-          if (selectedPrescription != null) {
-            showPrescriptionDialog(selectedPrescription);
-          } else {
-            JOptionPane.showMessageDialog(this, "Please select a prescription to edit");
-          }
-        });
+    buttonPanel.setEditButtonListener(e -> editSelectedPrescription());
     buttonPanel.setDeleteButtonListener(e -> deleteSelectedPrescription());
     buttonPanel.setFilterButtonListener(e -> showAdvancedFilterDialog());
     buttonPanel.setRefreshButtonListener(e -> loadPrescriptions());
@@ -100,83 +96,79 @@ public class PrescriptionPanel extends JPanel {
   private Prescription getSelectedPrescription() {
     int row = prescriptionTable.getSelectedRow();
     if (row != -1) {
-      String prescriptionId = (String) tableModel.getValueAt(row, 0);
-      LocalDate date = LocalDate.parse((String) tableModel.getValueAt(row, 1), dateFormatter);
-      String drugId = (String) tableModel.getValueAt(row, 2);
-      String doctorId = (String) tableModel.getValueAt(row, 3);
-      String patientId = (String) tableModel.getValueAt(row, 4);
-      int dosage = (int) tableModel.getValueAt(row, 5);
-      int duration = (int) tableModel.getValueAt(row, 6);
-      String comment = (String) tableModel.getValueAt(row, 7);
-
-      return new Prescription(
-          prescriptionId, date, dosage, duration, comment, drugId, doctorId, patientId);
+      try {
+        String prescriptionId = (String) tableModel.getValueAt(row, 0);
+        return prescriptionService.getPrescriptionById(prescriptionId);
+      } catch (Exception ex) {
+        JOptionPane.showMessageDialog(
+            this,
+            "Error retrieving prescription details: " + ex.getMessage(),
+            "Error",
+            JOptionPane.ERROR_MESSAGE);
+      }
+    } else {
+      JOptionPane.showMessageDialog(
+          this,
+          "Please select a prescription first",
+          "No Selection",
+          JOptionPane.INFORMATION_MESSAGE);
     }
     return null;
   }
 
-  private void showPrescriptionDialog(Prescription existingPrescription) {
-    JDialog dialog =
-        new JDialog(
-            (Frame) SwingUtilities.getWindowAncestor(this),
-            existingPrescription == null ? "Add Prescription" : "Edit Prescription",
-            true);
-    dialog.setLayout(new BorderLayout(10, 10));
-
-    // Form panel for entering prescription details
-    JPanel formPanel = new JPanel(new GridLayout(8, 2, 5, 5));
-    formPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-
-    JTextField idField = new JTextField(20);
-    JTextField dateField = new JTextField(20);
-    JTextField drugIdField = new JTextField(20);
-    JTextField doctorIdField = new JTextField(20);
-    JTextField patientIdField = new JTextField(20);
-    JTextField dosageField = new JTextField(20);
-    JTextField durationField = new JTextField(20);
-    JTextField commentField = new JTextField(20);
-
-    if (existingPrescription != null) {
-      idField.setText(existingPrescription.getPrescriptionId());
-      idField.setEditable(false);
-      dateField.setText(existingPrescription.getDateOfPrescribe().format(dateFormatter));
-      drugIdField.setText(existingPrescription.getDrugId());
-      doctorIdField.setText(existingPrescription.getDoctorId());
-      patientIdField.setText(existingPrescription.getPatientId());
-      dosageField.setText(String.valueOf(existingPrescription.getDosage()));
-      durationField.setText(String.valueOf(existingPrescription.getDuration()));
-      commentField.setText(existingPrescription.getComment());
+  private void editSelectedPrescription() {
+    Prescription prescription = getSelectedPrescription();
+    if (prescription != null) {
+      showPrescriptionDialog(prescription);
     }
+  }
 
-    formPanel.add(new JLabel("Prescription ID:"));
-    formPanel.add(idField);
-    formPanel.add(new JLabel("Date (YYYY-MM-DD):"));
-    formPanel.add(dateField);
-    formPanel.add(new JLabel("Drug ID:"));
-    formPanel.add(drugIdField);
-    formPanel.add(new JLabel("Doctor ID:"));
-    formPanel.add(doctorIdField);
-    formPanel.add(new JLabel("Patient ID:"));
-    formPanel.add(patientIdField);
-    formPanel.add(new JLabel("Dosage:"));
-    formPanel.add(dosageField);
-    formPanel.add(new JLabel("Duration (days):"));
-    formPanel.add(durationField);
-    formPanel.add(new JLabel("Comment:"));
-    formPanel.add(commentField);
+  private void showPrescriptionDialog(Prescription existingPrescription) {
+    // Create FormDialog.Builder
+    FormDialog.Builder builder =
+        new FormDialog.Builder(
+            (Frame) SwingUtilities.getWindowAncestor(this),
+            existingPrescription == null ? "Add Prescription" : "Edit Prescription");
 
-    // Button panel for save and cancel
-    JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-    JButton saveButton = new JButton("Save");
-    JButton cancelButton = new JButton("Cancel");
-    buttonPanel.add(saveButton);
-    buttonPanel.add(cancelButton);
+    // Add form fields with initial values if editing
+    String idValue = existingPrescription != null ? existingPrescription.getPrescriptionId() : "";
+    String dateValue =
+        existingPrescription != null
+            ? existingPrescription.getDateOfPrescribe().format(dateFormatter)
+            : LocalDate.now().format(dateFormatter);
+    String drugIdValue = existingPrescription != null ? existingPrescription.getDrugId() : "";
+    String doctorIdValue = existingPrescription != null ? existingPrescription.getDoctorId() : "";
+    String patientIdValue = existingPrescription != null ? existingPrescription.getPatientId() : "";
+    String dosageValue =
+        existingPrescription != null ? String.valueOf(existingPrescription.getDosage()) : "";
+    String durationValue =
+        existingPrescription != null ? String.valueOf(existingPrescription.getDuration()) : "";
+    String commentValue = existingPrescription != null ? existingPrescription.getComment() : "";
 
-    saveButton.addActionListener(
-        e -> {
+    builder.addTextField("Prescription ID", "prescriptionId", idValue);
+    builder.addTextField("Date (YYYY-MM-DD)", "date", dateValue);
+    builder.addTextField("Drug ID", "drugId", drugIdValue);
+    builder.addTextField("Doctor ID", "doctorId", doctorIdValue);
+    builder.addTextField("Patient ID", "patientId", patientIdValue);
+    builder.addTextField("Dosage", "dosage", dosageValue);
+    builder.addTextField("Duration (days)", "duration", durationValue);
+    builder.addTextField("Comment", "comment", commentValue);
+
+    // Define save action
+    builder.onSave(
+        formData -> {
           try {
-            // Enforce PK constraint
-            String id = idField.getText().trim();
+            // Extract form data
+            String id = (String) formData.get("prescriptionId");
+            String dateText = (String) formData.get("date");
+            String drugId = (String) formData.get("drugId");
+            String doctorId = (String) formData.get("doctorId");
+            String patientId = (String) formData.get("patientId");
+            String dosageText = (String) formData.get("dosage");
+            String durationText = (String) formData.get("duration");
+            String comment = (String) formData.get("comment");
+
+            // Validate prescription ID
             if (id.isEmpty()) {
               JOptionPane.showMessageDialog(
                   this,
@@ -185,23 +177,18 @@ public class PrescriptionPanel extends JPanel {
                   JOptionPane.ERROR_MESSAGE);
               return;
             }
-            String dateText = dateField.getText().trim();
-            String drugId = drugIdField.getText().trim();
-            String doctorId = doctorIdField.getText().trim();
-            String patientId = patientIdField.getText().trim();
-            String dosageText = dosageField.getText().trim();
-            String durationText = durationField.getText().trim();
-            String comment = commentField.getText().trim();
 
-            // Handle empty fields
+            // Parse date and numeric values
             LocalDate date =
                 dateText.isEmpty() ? LocalDate.now() : LocalDate.parse(dateText, dateFormatter);
             int dosage = dosageText.isEmpty() ? 0 : Integer.parseInt(dosageText);
             int duration = durationText.isEmpty() ? 0 : Integer.parseInt(durationText);
 
+            // Create prescription object
             Prescription prescription =
                 new Prescription(id, date, dosage, duration, comment, drugId, doctorId, patientId);
 
+            // Add or update prescription
             if (existingPrescription == null) {
               prescriptionService.addPrescription(prescription);
               JOptionPane.showMessageDialog(this, "Prescription added successfully");
@@ -209,8 +196,9 @@ public class PrescriptionPanel extends JPanel {
               prescriptionService.updatePrescription(prescription);
               JOptionPane.showMessageDialog(this, "Prescription updated successfully");
             }
+
+            // Refresh display
             loadPrescriptions();
-            dialog.dispose();
           } catch (DateTimeParseException dtpe) {
             JOptionPane.showMessageDialog(
                 this,
@@ -228,19 +216,24 @@ public class PrescriptionPanel extends JPanel {
                 this, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
           }
         });
-    cancelButton.addActionListener(e -> dialog.dispose());
 
-    dialog.add(formPanel, BorderLayout.CENTER);
-    dialog.add(buttonPanel, BorderLayout.SOUTH);
-    dialog.pack();
-    dialog.setLocationRelativeTo(this);
+    // Create and show the dialog
+    FormDialog dialog = builder.build();
+
+    // Disable ID field if editing
+    if (existingPrescription != null) {
+      JComponent idField = dialog.getField("prescriptionId");
+      if (idField instanceof JTextField) {
+        ((JTextField) idField).setEditable(false);
+      }
+    }
+
     dialog.setVisible(true);
   }
 
   private void deleteSelectedPrescription() {
-    int row = prescriptionTable.getSelectedRow();
-    if (row != -1) {
-      String prescriptionId = (String) tableModel.getValueAt(row, 0);
+    Prescription prescription = getSelectedPrescription();
+    if (prescription != null) {
       int result =
           JOptionPane.showConfirmDialog(
               this,
@@ -249,7 +242,7 @@ public class PrescriptionPanel extends JPanel {
               JOptionPane.YES_NO_OPTION);
       if (result == JOptionPane.YES_OPTION) {
         try {
-          prescriptionService.deletePrescription(prescriptionId);
+          prescriptionService.deletePrescription(prescription.getPrescriptionId());
           loadPrescriptions();
           JOptionPane.showMessageDialog(this, "Prescription deleted successfully");
         } catch (Exception ex) {
@@ -260,128 +253,69 @@ public class PrescriptionPanel extends JPanel {
               JOptionPane.ERROR_MESSAGE);
         }
       }
-    } else {
-      JOptionPane.showMessageDialog(this, "Please select a prescription to delete");
     }
   }
 
   private void showAdvancedFilterDialog() {
-    JDialog filterDialog =
-        new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Advanced Filter", true);
-    filterDialog.setLayout(new BorderLayout(10, 10));
+    // Create a FormDialog.Builder for the filter dialog
+    FormDialog.Builder builder =
+        new FormDialog.Builder((Frame) SwingUtilities.getWindowAncestor(this), "Advanced Filter");
 
-    JPanel formPanel = new JPanel(new GridLayout(8, 2, 5, 5));
-    formPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+    // Add filter fields
+    builder.addTextField("Prescription ID", "prescriptionId");
+    builder.addTextField("Date", "date");
+    builder.addTextField("Drug ID", "drugId");
+    builder.addTextField("Doctor ID", "doctorId");
+    builder.addTextField("Patient ID", "patientId");
+    builder.addTextField("Dosage", "dosage");
+    builder.addTextField("Duration", "duration");
+    builder.addTextField("Comment", "comment");
 
-    JTextField filterIdField = new JTextField(20);
-    JTextField filterDateField = new JTextField(20);
-    JTextField filterDrugIdField = new JTextField(20);
-    JTextField filterDoctorIdField = new JTextField(20);
-    JTextField filterPatientIdField = new JTextField(20);
-    JTextField filterDosageField = new JTextField(20);
-    JTextField filterDurationField = new JTextField(20);
-    JTextField filterCommentField = new JTextField(20);
+    // Define filter action
+    builder.onSave(this::applyFilters);
 
-    formPanel.add(new JLabel("Prescription ID contains:"));
-    formPanel.add(filterIdField);
-    formPanel.add(new JLabel("Date contains:"));
-    formPanel.add(filterDateField);
-    formPanel.add(new JLabel("Drug ID contains:"));
-    formPanel.add(filterDrugIdField);
-    formPanel.add(new JLabel("Doctor ID contains:"));
-    formPanel.add(filterDoctorIdField);
-    formPanel.add(new JLabel("Patient ID contains:"));
-    formPanel.add(filterPatientIdField);
-    formPanel.add(new JLabel("Dosage contains:"));
-    formPanel.add(filterDosageField);
-    formPanel.add(new JLabel("Duration contains:"));
-    formPanel.add(filterDurationField);
-    formPanel.add(new JLabel("Comment contains:"));
-    formPanel.add(filterCommentField);
+    // Create and customize the dialog
+    FormDialog dialog = builder.build();
+    dialog.setSaveButtonText("Filter");
+    dialog.setCancelButtonText("Cancel");
+    dialog.setVisible(true);
+  }
 
-    JPanel filterButtonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-    JButton filterButton = new JButton("Filter");
-    JButton cancelButton = new JButton("Cancel");
-    filterButtonPanel.add(filterButton);
-    filterButtonPanel.add(cancelButton);
+  private void applyFilters(Map<String, Object> formData) {
+    try {
+      List<Prescription> prescriptions = prescriptionService.getAllPrescriptions();
+      FilterResult<Prescription> result = new FilterResult<>(prescriptions);
 
-    filterButton.addActionListener(
-        e -> {
-          try {
-            List<Prescription> prescriptions = prescriptionService.getAllPrescriptions();
+      // Define filter configurations for each field
+      Map<String, Function<Prescription, String>> filterMappings =
+          Map.ofEntries(
+              Map.entry("prescriptionId", Prescription::getPrescriptionId),
+              Map.entry("date", p -> p.getDateOfPrescribe().format(dateFormatter)),
+              Map.entry("drugId", Prescription::getDrugId),
+              Map.entry("doctorId", Prescription::getDoctorId),
+              Map.entry("patientId", Prescription::getPatientId),
+              Map.entry("dosage", p -> String.valueOf(p.getDosage())),
+              Map.entry("duration", p -> String.valueOf(p.getDuration())),
+              Map.entry("comment", Prescription::getComment));
 
-            String idFilter = filterIdField.getText().trim();
-            String dateFilter = filterDateField.getText().trim();
-            String drugIdFilter = filterDrugIdField.getText().trim();
-            String doctorIdFilter = filterDoctorIdField.getText().trim();
-            String patientIdFilter = filterPatientIdField.getText().trim();
-            String dosageFilter = filterDosageField.getText().trim();
-            String durationFilter = filterDurationField.getText().trim();
-            String commentFilter = filterCommentField.getText().trim();
+      // Apply filters for non-empty fields
+      for (Map.Entry<String, Function<Prescription, String>> entry : filterMappings.entrySet()) {
+        String fieldName = entry.getKey();
+        Function<Prescription, String> getter = entry.getValue();
 
-            prescriptions =
-                prescriptions.stream()
-                    .filter(
-                        p ->
-                            idFilter.isEmpty()
-                                || p.getPrescriptionId()
-                                    .toLowerCase()
-                                    .contains(idFilter.toLowerCase()))
-                    .filter(
-                        p ->
-                            dateFilter.isEmpty()
-                                || p.getDateOfPrescribe()
-                                    .format(dateFormatter)
-                                    .contains(dateFilter))
-                    .filter(
-                        p ->
-                            drugIdFilter.isEmpty()
-                                || p.getDrugId().toLowerCase().contains(drugIdFilter.toLowerCase()))
-                    .filter(
-                        p ->
-                            doctorIdFilter.isEmpty()
-                                || p.getDoctorId()
-                                    .toLowerCase()
-                                    .contains(doctorIdFilter.toLowerCase()))
-                    .filter(
-                        p ->
-                            patientIdFilter.isEmpty()
-                                || p.getPatientId()
-                                    .toLowerCase()
-                                    .contains(patientIdFilter.toLowerCase()))
-                    .filter(
-                        p ->
-                            dosageFilter.isEmpty()
-                                || String.valueOf(p.getDosage()).contains(dosageFilter))
-                    .filter(
-                        p ->
-                            durationFilter.isEmpty()
-                                || String.valueOf(p.getDuration()).contains(durationFilter))
-                    .filter(
-                        p ->
-                            commentFilter.isEmpty()
-                                || p.getComment()
-                                    .toLowerCase()
-                                    .contains(commentFilter.toLowerCase()))
-                    .toList();
+        String filterValue = (String) formData.get(fieldName);
+        if (filterValue != null && !filterValue.isEmpty()) {
+          result = result.filter(filterValue, getter);
+        }
+      }
 
-            populateTable(prescriptions);
-          } catch (Exception ex) {
-            JOptionPane.showMessageDialog(
-                this,
-                "Error filtering prescriptions: " + ex.getMessage(),
-                "Error",
-                JOptionPane.ERROR_MESSAGE);
-          }
-          filterDialog.dispose();
-        });
-
-    cancelButton.addActionListener(e -> filterDialog.dispose());
-
-    filterDialog.add(formPanel, BorderLayout.CENTER);
-    filterDialog.add(filterButtonPanel, BorderLayout.SOUTH);
-    filterDialog.pack();
-    filterDialog.setLocationRelativeTo(this);
-    filterDialog.setVisible(true);
+      populateTable(result.getResults());
+    } catch (Exception ex) {
+      JOptionPane.showMessageDialog(
+          this,
+          "Error filtering prescriptions: " + ex.getMessage(),
+          "Error",
+          JOptionPane.ERROR_MESSAGE);
+    }
   }
 }
