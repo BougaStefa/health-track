@@ -1,18 +1,17 @@
 package com.bougastefa.gui.panels;
 
 import com.bougastefa.gui.components.ButtonPanel;
-import com.bougastefa.gui.components.FilterDialog;
 import com.bougastefa.gui.components.FilterResult;
-import com.bougastefa.gui.components.FilterableField;
+import com.bougastefa.gui.components.FormDialog;
 import com.bougastefa.models.Visit;
 import com.bougastefa.services.VisitService;
 import java.awt.*;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 
@@ -140,59 +139,43 @@ public class VisitPanel extends JPanel {
   }
 
   private void showVisitDialog(Visit existingVisit) {
-    JDialog dialog =
-        new JDialog(
+    // Create FormDialog.Builder
+    FormDialog.Builder builder =
+        new FormDialog.Builder(
             (Frame) SwingUtilities.getWindowAncestor(this),
-            existingVisit == null ? "Add Visit" : "Edit Visit",
-            true);
-    dialog.setLayout(new BorderLayout(10, 10));
+            existingVisit == null ? "Add Visit" : "Edit Visit");
 
-    // Form panel for entering visit details
-    JPanel formPanel = new JPanel(new GridBagLayout());
-    formPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-    GridBagConstraints gbc = new GridBagConstraints();
-    gbc.fill = GridBagConstraints.HORIZONTAL;
-    gbc.insets = new Insets(5, 5, 5, 5);
+    // Add form fields with initial values if editing
+    String dateValue =
+        existingVisit != null
+            ? existingVisit.getDateOfVisit().format(dateFormatter)
+            : LocalDate.now().format(dateFormatter);
+    String doctorIdValue = existingVisit != null ? existingVisit.getDoctorId() : "";
+    String patientIdValue = existingVisit != null ? existingVisit.getPatientId() : "";
+    String symptomsValue = existingVisit != null ? existingVisit.getSymptoms() : "";
+    String diagnosisValue = existingVisit != null ? existingVisit.getDiagnosis() : "";
 
-    JTextField dateField = new JTextField(20);
-    JTextField doctorIdField = new JTextField(20);
-    JTextField patientIdField = new JTextField(20);
-    JTextField symptomsField = new JTextField(20);
-    JTextField diagnosisField = new JTextField(20);
+    builder.addTextField("Date (yyyy-MM-dd)", "dateOfVisit", dateValue);
+    builder.addTextField("Doctor ID", "doctorId", doctorIdValue);
+    builder.addTextField("Patient ID", "patientId", patientIdValue);
+    builder.addTextField("Symptoms", "symptoms", symptomsValue);
+    builder.addTextField("Diagnosis", "diagnosis", diagnosisValue);
 
-    if (existingVisit != null) {
-      dateField.setText(existingVisit.getDateOfVisit().format(dateFormatter));
-      // Make the composite primary key fields uneditable if editing
-      dateField.setEditable(false);
-      doctorIdField.setText(existingVisit.getDoctorId());
-      doctorIdField.setEditable(false);
-      patientIdField.setText(existingVisit.getPatientId());
-      patientIdField.setEditable(false);
-      symptomsField.setText(existingVisit.getSymptoms());
-      diagnosisField.setText(existingVisit.getDiagnosis());
-    }
-
-    addFormField(formPanel, "Date (yyyy-MM-dd):", dateField, gbc, 0);
-    addFormField(formPanel, "Doctor ID:", doctorIdField, gbc, 1);
-    addFormField(formPanel, "Patient ID:", patientIdField, gbc, 2);
-    addFormField(formPanel, "Symptoms:", symptomsField, gbc, 3);
-    addFormField(formPanel, "Diagnosis:", diagnosisField, gbc, 4);
-
-    // Button panel for save and cancel
-    JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-    JButton saveButton = new JButton("Save");
-    JButton cancelButton = new JButton("Cancel");
-    buttonPanel.add(saveButton);
-    buttonPanel.add(cancelButton);
-
-    saveButton.addActionListener(
-        e -> {
+    // Define save action
+    builder.onSave(
+        formData -> {
           try {
+            // Extract form data
+            String dateStr = (String) formData.get("dateOfVisit");
+            String doctorId = (String) formData.get("doctorId");
+            String patientId = (String) formData.get("patientId");
+            String symptoms = (String) formData.get("symptoms");
+            String diagnosis = (String) formData.get("diagnosis");
+
             // Validate date format
-            String dateStr = dateField.getText().trim();
             if (dateStr.isEmpty()) {
               JOptionPane.showMessageDialog(
-                  dialog, "Date cannot be empty", "Validation Error", JOptionPane.ERROR_MESSAGE);
+                  this, "Date cannot be empty", "Validation Error", JOptionPane.ERROR_MESSAGE);
               return;
             }
 
@@ -201,7 +184,7 @@ public class VisitPanel extends JPanel {
               date = LocalDate.parse(dateStr, dateFormatter);
             } catch (DateTimeParseException ex) {
               JOptionPane.showMessageDialog(
-                  dialog,
+                  this,
                   "Invalid date format. Please use yyyy-MM-dd",
                   "Validation Error",
                   JOptionPane.ERROR_MESSAGE);
@@ -209,97 +192,101 @@ public class VisitPanel extends JPanel {
             }
 
             // Validate doctor and patient IDs
-            String doctorId = doctorIdField.getText().trim();
-            String patientId = patientIdField.getText().trim();
             if (doctorId.isEmpty() || patientId.isEmpty()) {
               JOptionPane.showMessageDialog(
-                  dialog,
+                  this,
                   "Doctor ID and Patient ID cannot be empty",
                   "Validation Error",
                   JOptionPane.ERROR_MESSAGE);
               return;
             }
 
-            Visit visit =
-                new Visit(
-                    date, symptomsField.getText(), diagnosisField.getText(), doctorId, patientId);
+            Visit visit = new Visit(date, symptoms, diagnosis, doctorId, patientId);
 
             if (existingVisit == null) {
               visitService.addVisit(visit);
-              JOptionPane.showMessageDialog(dialog, "Visit added successfully");
+              JOptionPane.showMessageDialog(this, "Visit added successfully");
             } else {
               visitService.updateVisit(visit);
-              JOptionPane.showMessageDialog(dialog, "Visit updated successfully");
+              JOptionPane.showMessageDialog(this, "Visit updated successfully");
             }
             loadVisits();
-            dialog.dispose();
           } catch (Exception ex) {
             JOptionPane.showMessageDialog(
-                dialog, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                this, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
           }
         });
 
-    cancelButton.addActionListener(e -> dialog.dispose());
+    // Create and show the dialog
+    FormDialog dialog = builder.build();
 
-    dialog.add(formPanel, BorderLayout.CENTER);
-    dialog.add(buttonPanel, BorderLayout.SOUTH);
-    dialog.pack();
-    dialog.setLocationRelativeTo(this);
+    // Disable composite primary key fields if editing
+    if (existingVisit != null) {
+      JComponent dateField = dialog.getField("dateOfVisit");
+      JComponent doctorIdField = dialog.getField("doctorId");
+      JComponent patientIdField = dialog.getField("patientId");
+
+      if (dateField instanceof JTextField) {
+        ((JTextField) dateField).setEditable(false);
+      }
+
+      if (doctorIdField instanceof JTextField) {
+        ((JTextField) doctorIdField).setEditable(false);
+      }
+
+      if (patientIdField instanceof JTextField) {
+        ((JTextField) patientIdField).setEditable(false);
+      }
+    }
+
     dialog.setVisible(true);
-  }
-
-  private void addFormField(
-      JPanel panel, String label, JComponent field, GridBagConstraints gbc, int row) {
-    gbc.gridx = 0;
-    gbc.gridy = row;
-    gbc.weightx = 0;
-    panel.add(new JLabel(label), gbc);
-
-    gbc.gridx = 1;
-    gbc.weightx = 1;
-    panel.add(field, gbc);
   }
 
   private void showAdvancedFilterDialog() {
-    List<FilterableField> fields =
-        Arrays.asList(
-            new FilterableField("Date", "dateOfVisit"),
-            new FilterableField("Doctor ID", "doctorId"),
-            new FilterableField("Patient ID", "patientId"),
-            new FilterableField("Symptoms", "symptoms"),
-            new FilterableField("Diagnosis", "diagnosis"));
+    // Create a FormDialog.Builder for the filter dialog
+    FormDialog.Builder builder =
+        new FormDialog.Builder((Frame) SwingUtilities.getWindowAncestor(this), "Advanced Filter");
 
-    FilterDialog dialog =
-        new FilterDialog(
-            (Frame) SwingUtilities.getWindowAncestor(this),
-            "Advanced Filter",
-            fields,
-            this::applyFilters);
+    // Add filter fields
+    builder.addTextField("Date", "dateOfVisit");
+    builder.addTextField("Doctor ID", "doctorId");
+    builder.addTextField("Patient ID", "patientId");
+    builder.addTextField("Symptoms", "symptoms");
+    builder.addTextField("Diagnosis", "diagnosis");
 
+    // Define filter action
+    builder.onSave(this::applyFilters);
+
+    // Create and customize the dialog
+    FormDialog dialog = builder.build();
+    dialog.setSaveButtonText("Filter");
+    dialog.setCancelButtonText("Cancel");
     dialog.setVisible(true);
   }
 
-  private void applyFilters(Map<String, String> filters) {
+  private void applyFilters(Map<String, Object> formData) {
     try {
       List<Visit> visits = visitService.getAllVisits();
       FilterResult<Visit> result = new FilterResult<>(visits);
 
-      if (filters.containsKey("dateOfVisit")) {
-        result =
-            result.filter(
-                filters.get("dateOfVisit"), visit -> visit.getDateOfVisit().format(dateFormatter));
-      }
-      if (filters.containsKey("doctorId")) {
-        result = result.filter(filters.get("doctorId"), Visit::getDoctorId);
-      }
-      if (filters.containsKey("patientId")) {
-        result = result.filter(filters.get("patientId"), Visit::getPatientId);
-      }
-      if (filters.containsKey("symptoms")) {
-        result = result.filter(filters.get("symptoms"), Visit::getSymptoms);
-      }
-      if (filters.containsKey("diagnosis")) {
-        result = result.filter(filters.get("diagnosis"), Visit::getDiagnosis);
+      // Define filter configurations for each field
+      Map<String, Function<Visit, String>> filterMappings =
+          Map.of(
+              "dateOfVisit", visit -> visit.getDateOfVisit().format(dateFormatter),
+              "doctorId", Visit::getDoctorId,
+              "patientId", Visit::getPatientId,
+              "symptoms", Visit::getSymptoms,
+              "diagnosis", Visit::getDiagnosis);
+
+      // Apply filters for non-empty fields
+      for (Map.Entry<String, Function<Visit, String>> entry : filterMappings.entrySet()) {
+        String fieldName = entry.getKey();
+        Function<Visit, String> getter = entry.getValue();
+
+        String filterValue = (String) formData.get(fieldName);
+        if (filterValue != null && !filterValue.isEmpty()) {
+          result = result.filter(filterValue, getter);
+        }
       }
 
       populateTable(result.getResults());
