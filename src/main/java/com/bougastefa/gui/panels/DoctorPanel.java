@@ -1,16 +1,15 @@
 package com.bougastefa.gui.panels;
 
 import com.bougastefa.gui.components.ButtonPanel;
-import com.bougastefa.gui.components.FilterDialog;
 import com.bougastefa.gui.components.FilterResult;
-import com.bougastefa.gui.components.FilterableField;
+import com.bougastefa.gui.components.FormDialog;
 import com.bougastefa.models.Doctor;
 import com.bougastefa.models.Specialist;
 import com.bougastefa.services.DoctorService;
 import java.awt.*;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 
@@ -55,6 +54,8 @@ public class DoctorPanel extends JPanel {
         };
     doctorTable = new JTable(tableModel);
     doctorTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+    doctorTable.getTableHeader().setReorderingAllowed(false);
+    doctorTable.setFillsViewportHeight(true);
   }
 
   private void loadDoctors() {
@@ -145,194 +146,161 @@ public class DoctorPanel extends JPanel {
     }
   }
 
-  private void showDoctorDialog(Doctor existingDoctor) {
-    JDialog dialog =
-        new JDialog(
+   private void showDoctorDialog(Doctor existingDoctor) {
+    // Create FormDialog.Builder
+    FormDialog.Builder builder =
+        new FormDialog.Builder(
             (Frame) SwingUtilities.getWindowAncestor(this),
-            existingDoctor == null ? "Add Doctor" : "Edit Doctor",
-            true);
-    dialog.setLayout(new BorderLayout(10, 10));
+            existingDoctor == null ? "Add Doctor" : "Edit Doctor");
 
-    // Form panel for entering doctor details
-    JPanel formPanel = new JPanel(new GridBagLayout());
-    formPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-    GridBagConstraints gbc = new GridBagConstraints();
-    gbc.fill = GridBagConstraints.HORIZONTAL;
-    gbc.insets = new Insets(5, 5, 5, 5);
+    // Add form fields with initial values if editing
+    String idValue = existingDoctor != null ? existingDoctor.getDoctorId() : "";
+    String firstNameValue = existingDoctor != null ? existingDoctor.getFirstName() : "";
+    String surnameValue = existingDoctor != null ? existingDoctor.getSurname() : "";
+    String addressValue = existingDoctor != null ? existingDoctor.getAddress() : "";
+    String emailValue = existingDoctor != null ? existingDoctor.getEmail() : "";
+    String hospitalValue = existingDoctor != null ? existingDoctor.getHospital() : "";
+    
+    boolean isSpecialist = existingDoctor instanceof Specialist;
+    String specializationValue = isSpecialist ? ((Specialist) existingDoctor).getSpecialization() : "";
 
-    JTextField idField = new JTextField(20);
-    JTextField firstNameField = new JTextField(20);
-    JTextField surnameField = new JTextField(20);
-    JTextField addressField = new JTextField(20);
-    JTextField emailField = new JTextField(20);
-    JTextField hospitalField = new JTextField(20);
-    JTextField specializationField = new JTextField(20);
-    JCheckBox isSpecialistCheckBox = new JCheckBox("Is Specialist");
+    builder.addTextField("Doctor ID", "doctorId", idValue);
+    builder.addTextField("First Name", "firstName", firstNameValue);
+    builder.addTextField("Surname", "surname", surnameValue);
+    builder.addTextField("Address", "address", addressValue);
+    builder.addTextField("Email", "email", emailValue);
+    builder.addTextField("Hospital", "hospital", hospitalValue);
+    builder.addCheckBox("Is Specialist", "isSpecialist", isSpecialist);
+    builder.addTextField("Specialization", "specialization", specializationValue);
 
-    if (existingDoctor != null) {
-      idField.setText(existingDoctor.getDoctorId());
-      idField.setEditable(false);
-      firstNameField.setText(existingDoctor.getFirstName());
-      surnameField.setText(existingDoctor.getSurname());
-      addressField.setText(existingDoctor.getAddress());
-      emailField.setText(existingDoctor.getEmail());
-      hospitalField.setText(existingDoctor.getHospital());
-
-      if (existingDoctor instanceof Specialist) {
-        isSpecialistCheckBox.setSelected(true);
-        specializationField.setText(((Specialist) existingDoctor).getSpecialization());
-      } else {
-        specializationField.setEnabled(false);
-      }
-    } else {
-      specializationField.setEnabled(false);
-    }
-
-    // Add listener to enable/disable the specialization field based on checkbox
-    isSpecialistCheckBox.addActionListener(
-        e -> specializationField.setEnabled(isSpecialistCheckBox.isSelected()));
-
-    addFormField(formPanel, "Doctor ID:", idField, gbc, 0);
-    addFormField(formPanel, "First Name:", firstNameField, gbc, 1);
-    addFormField(formPanel, "Surname:", surnameField, gbc, 2);
-    addFormField(formPanel, "Address:", addressField, gbc, 3);
-    addFormField(formPanel, "Email:", emailField, gbc, 4);
-    addFormField(formPanel, "Hospital:", hospitalField, gbc, 5);
-    addFormField(formPanel, "", isSpecialistCheckBox, gbc, 6);
-    addFormField(formPanel, "Specialization:", specializationField, gbc, 7);
-
-    // Button panel for save and cancel
-    JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-    JButton saveButton = new JButton("Save");
-    JButton cancelButton = new JButton("Cancel");
-    buttonPanel.add(saveButton);
-    buttonPanel.add(cancelButton);
-
-    saveButton.addActionListener(
-        e -> {
+    // Define save action
+    builder.onSave(
+        formData -> {
           try {
-            String doctorId = idField.getText().trim();
+            // Extract form data
+            String doctorId = (String) formData.get("doctorId");
+            String firstName = (String) formData.get("firstName");
+            String surname = (String) formData.get("surname");
+            String address = (String) formData.get("address");
+            String email = (String) formData.get("email");
+            String hospital = (String) formData.get("hospital");
+            boolean isSpecialistSelected = (Boolean) formData.get("isSpecialist");
+            String specialization = (String) formData.get("specialization");
+
+            // Validate doctor ID
             if (doctorId.isEmpty()) {
               JOptionPane.showMessageDialog(
-                  dialog,
-                  "Doctor ID cannot be empty",
-                  "Validation Error",
-                  JOptionPane.ERROR_MESSAGE);
+                  this, "Doctor ID cannot be empty", "Validation Error", JOptionPane.ERROR_MESSAGE);
               return;
             }
 
-            String firstName = firstNameField.getText().trim();
-            String surname = surnameField.getText().trim();
-            String address = addressField.getText().trim();
-            String email = emailField.getText().trim();
-            String hospital = hospitalField.getText().trim();
-
+            // Create doctor object
             Doctor doctor;
-            if (isSpecialistCheckBox.isSelected()) {
-              String specialization = specializationField.getText().trim();
+            if (isSpecialistSelected) {
               if (specialization.isEmpty()) {
                 JOptionPane.showMessageDialog(
-                    dialog,
+                    this,
                     "Specialization cannot be empty for specialists",
                     "Validation Error",
                     JOptionPane.ERROR_MESSAGE);
                 return;
               }
-              doctor =
-                  new Specialist(
-                      doctorId, firstName, surname, address, email, hospital, specialization);
+              doctor = new Specialist(doctorId, firstName, surname, address, email, hospital, specialization);
             } else {
               doctor = new Doctor(doctorId, firstName, surname, address, email, hospital);
             }
 
+            // Add or update doctor
             if (existingDoctor == null) {
               doctorService.addDoctor(doctor);
-              JOptionPane.showMessageDialog(dialog, "Doctor added successfully");
+              JOptionPane.showMessageDialog(this, "Doctor added successfully");
             } else {
               doctorService.updateDoctor(doctor);
-              JOptionPane.showMessageDialog(dialog, "Doctor updated successfully");
+              JOptionPane.showMessageDialog(this, "Doctor updated successfully");
             }
             loadDoctors();
-            dialog.dispose();
           } catch (Exception ex) {
             JOptionPane.showMessageDialog(
-                dialog, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                this, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
           }
         });
 
-    cancelButton.addActionListener(e -> dialog.dispose());
+    // Create and show the dialog
+    FormDialog dialog = builder.build();
 
-    dialog.add(formPanel, BorderLayout.CENTER);
-    dialog.add(buttonPanel, BorderLayout.SOUTH);
-    dialog.pack();
-    dialog.setLocationRelativeTo(this);
-    dialog.setVisible(true);
-  }
-
-  private void addFormField(
-      JPanel panel, String label, JComponent field, GridBagConstraints gbc, int row) {
-    gbc.gridx = 0;
-    gbc.gridy = row;
-    gbc.weightx = 0;
-    if (!label.isEmpty()) {
-      panel.add(new JLabel(label), gbc);
-    } else {
-      panel.add(new JLabel(), gbc);
+    // Disable ID field if editing
+    if (existingDoctor != null) {
+      JComponent idField = dialog.getField("doctorId");
+      if (idField instanceof JTextField) {
+        ((JTextField) idField).setEditable(false);
+      }
     }
 
-    gbc.gridx = 1;
-    gbc.weightx = 1;
-    panel.add(field, gbc);
+    // Add listener to enable/disable specialization field based on checkbox
+    JCheckBox specialistCheckbox = (JCheckBox) dialog.getField("isSpecialist");
+    JTextField specializationField = (JTextField) dialog.getField("specialization");
+    
+    specializationField.setEnabled(specialistCheckbox.isSelected());
+    specialistCheckbox.addActionListener(e -> 
+        specializationField.setEnabled(specialistCheckbox.isSelected()));
+
+    dialog.setVisible(true);
   }
 
   private void showAdvancedFilterDialog() {
-    List<FilterableField> fields =
-        Arrays.asList(
-            new FilterableField("Doctor ID", "doctorId"),
-            new FilterableField("First Name", "firstName"),
-            new FilterableField("Surname", "surname"),
-            new FilterableField("Address", "address"),
-            new FilterableField("Email", "email"),
-            new FilterableField("Hospital", "hospital"),
-            new FilterableField("Specialization", "specialization"));
+    // Create a FormDialog.Builder for the filter dialog
+    FormDialog.Builder builder =
+        new FormDialog.Builder((Frame) SwingUtilities.getWindowAncestor(this), "Advanced Filter");
 
-    FilterDialog dialog =
-        new FilterDialog(
-            (Frame) SwingUtilities.getWindowAncestor(this),
-            "Advanced Filter",
-            fields,
-            this::applyFilters);
+    // Add filter fields
+    builder.addTextField("Doctor ID", "doctorId");
+    builder.addTextField("First Name", "firstName");
+    builder.addTextField("Surname", "surname");
+    builder.addTextField("Address", "address");
+    builder.addTextField("Email", "email");
+    builder.addTextField("Hospital", "hospital");
+    builder.addTextField("Specialization", "specialization");
 
+    // Define filter action
+    builder.onSave(this::applyFilters);
+
+    // Create and customize the dialog
+    FormDialog dialog = builder.build();
+    dialog.setSaveButtonText("Filter");
+    dialog.setCancelButtonText("Cancel");
     dialog.setVisible(true);
   }
 
-  private void applyFilters(Map<String, String> filters) {
+  private void applyFilters(Map<String, Object> formData) {
     try {
       List<Doctor> doctors = doctorService.getAllDoctors();
       FilterResult<Doctor> result = new FilterResult<>(doctors);
 
-      if (filters.containsKey("doctorId")) {
-        result = result.filter(filters.get("doctorId"), Doctor::getDoctorId);
+      // Define filter configurations for standard fields
+      Map<String, Function<Doctor, String>> filterMappings =
+          Map.of(
+              "doctorId", Doctor::getDoctorId,
+              "firstName", Doctor::getFirstName,
+              "surname", Doctor::getSurname,
+              "address", Doctor::getAddress,
+              "email", Doctor::getEmail,
+              "hospital", Doctor::getHospital);
+
+      // Apply standard filters for non-empty fields
+      for (Map.Entry<String, Function<Doctor, String>> entry : filterMappings.entrySet()) {
+        String fieldName = entry.getKey();
+        Function<Doctor, String> getter = entry.getValue();
+
+        String filterValue = (String) formData.get(fieldName);
+        if (filterValue != null && !filterValue.isEmpty()) {
+          result = result.filter(filterValue, getter);
+        }
       }
-      if (filters.containsKey("firstName")) {
-        result = result.filter(filters.get("firstName"), Doctor::getFirstName);
-      }
-      if (filters.containsKey("surname")) {
-        result = result.filter(filters.get("surname"), Doctor::getSurname);
-      }
-      if (filters.containsKey("address")) {
-        result = result.filter(filters.get("address"), Doctor::getAddress);
-      }
-      if (filters.containsKey("email")) {
-        result = result.filter(filters.get("email"), Doctor::getEmail);
-      }
-      if (filters.containsKey("hospital")) {
-        result = result.filter(filters.get("hospital"), Doctor::getHospital);
-      }
-      if (filters.containsKey("specialization")) {
-        String specializationFilter = filters.get("specialization");
-        // Special handling for specialization since it's only on Specialist subclass
-        List<Doctor> filteredDoctors =
+
+      // Special handling for specialization since it's in a subclass
+      String specializationFilter = (String) formData.get("specialization");
+      if (specializationFilter != null && !specializationFilter.isEmpty()) {
+        List<Doctor> filteredBySpecialization =
             result.getResults().stream()
                 .filter(
                     doctor -> {
@@ -346,7 +314,7 @@ public class DoctorPanel extends JPanel {
                       return false;
                     })
                 .toList();
-        result = new FilterResult<>(filteredDoctors);
+        result = new FilterResult<>(filteredBySpecialization);
       }
 
       populateTable(result.getResults());
