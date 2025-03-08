@@ -1,68 +1,36 @@
 package com.bougastefa.gui.panels;
 
-import com.bougastefa.gui.components.ButtonPanel;
+import com.bougastefa.gui.components.BasePanel;
 import com.bougastefa.gui.components.FilterResult;
 import com.bougastefa.gui.components.FormDialog;
 import com.bougastefa.models.Insurance;
 import com.bougastefa.services.InsuranceService;
-import java.awt.*;
-import java.util.*;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
 
-public class InsurancePanel extends JPanel {
+public class InsurancePanel extends BasePanel<Insurance> {
   private final InsuranceService insuranceService;
-  private DefaultTableModel tableModel;
-  private JTable insuranceTable;
 
   public InsurancePanel() {
+    super("Insurance");
     insuranceService = new InsuranceService();
-    setLayout(new BorderLayout());
-
-    // Add button panel
-    ButtonPanel buttonPanel = new ButtonPanel("Insurance");
-    buttonPanel.setAddButtonListener(e -> showInsuranceDialog(null));
-    buttonPanel.setEditButtonListener(e -> editSelectedInsurance());
-    buttonPanel.setDeleteButtonListener(e -> deleteSelectedInsurance());
-    buttonPanel.setFilterButtonListener(e -> showAdvancedFilterDialog());
-    buttonPanel.setRefreshButtonListener(e -> loadInsurances());
-
-    add(buttonPanel, BorderLayout.NORTH);
-
-    // Setup table for Insurances
-    setupInsuranceTable();
-    JScrollPane scrollPane = new JScrollPane(insuranceTable);
-    add(scrollPane, BorderLayout.CENTER);
-
-    // Initial load of insurances
-    loadInsurances();
+    loadData();
   }
 
-  private void setupInsuranceTable() {
-    String[] columnNames = {"Insurance ID", "Company", "Address", "Phone"};
-    tableModel =
-        new DefaultTableModel(columnNames, 0) {
-          @Override
-          public boolean isCellEditable(int row, int column) {
-            return false;
-          }
-        };
-    insuranceTable = new JTable(tableModel);
-    insuranceTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-    insuranceTable.getTableHeader().setReorderingAllowed(false);
-    insuranceTable.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
-    insuranceTable.setFillsViewportHeight(true);
+  @Override
+  protected String[] getColumnNames() {
+    return new String[] {"Insurance ID", "Company", "Address", "Phone"};
   }
 
-  private void loadInsurances() {
+  @Override
+  protected void loadData() {
     try {
       List<Insurance> insurances = insuranceService.getAllInsurances();
       populateTable(insurances);
     } catch (Exception ex) {
-      JOptionPane.showMessageDialog(
-          this, "Error loading insurances: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+      showError("Error loading insurances", ex);
     }
   }
 
@@ -79,71 +47,41 @@ public class InsurancePanel extends JPanel {
     }
   }
 
-  private Insurance getSelectedInsurance() {
-    int row = insuranceTable.getSelectedRow();
+  @Override
+  protected Insurance getSelectedItem() {
+    int row = dataTable.getSelectedRow();
     if (row != -1) {
       try {
         String insuranceId = (String) tableModel.getValueAt(row, 0);
         Insurance insurance = insuranceService.getInsuranceById(insuranceId);
         if (insurance == null) {
-          JOptionPane.showMessageDialog(
-              this, "Could not find the selected insurance", "Error", JOptionPane.ERROR_MESSAGE);
+          showError("Could not find the selected insurance", null);
         }
         return insurance;
       } catch (Exception ex) {
-        JOptionPane.showMessageDialog(
-            this,
-            "Error retrieving insurance details: " + ex.getMessage(),
-            "Error",
-            JOptionPane.ERROR_MESSAGE);
+        showError("Error retrieving insurance details", ex);
       }
     } else {
-      JOptionPane.showMessageDialog(
-          this,
-          "Please select an insurance first",
-          "No Selection",
-          JOptionPane.INFORMATION_MESSAGE);
+      showInfo("Please select an insurance first");
     }
     return null;
   }
 
-  private void editSelectedInsurance() {
-    Insurance insurance = getSelectedInsurance();
-    if (insurance != null) {
-      showInsuranceDialog(insurance);
-    }
+  @Override
+  protected void showAddDialog() {
+    showInsuranceDialog(null);
   }
 
-  private void deleteSelectedInsurance() {
-    Insurance insurance = getSelectedInsurance();
-    if (insurance != null) {
-      int result =
-          JOptionPane.showConfirmDialog(
-              this,
-              "Are you sure you want to delete this insurance?",
-              "Confirm Delete",
-              JOptionPane.YES_NO_OPTION);
-      if (result == JOptionPane.YES_OPTION) {
-        try {
-          insuranceService.deleteInsurance(insurance.getInsuranceId());
-          loadInsurances();
-          JOptionPane.showMessageDialog(this, "Insurance deleted successfully");
-        } catch (Exception ex) {
-          JOptionPane.showMessageDialog(
-              this,
-              "Error deleting insurance: " + ex.getMessage(),
-              "Error",
-              JOptionPane.ERROR_MESSAGE);
-        }
-      }
-    }
+  @Override
+  protected void showEditDialog(Insurance insurance) {
+    showInsuranceDialog(insurance);
   }
 
   private void showInsuranceDialog(Insurance existingInsurance) {
     // Create FormDialog.Builder
     FormDialog.Builder builder =
         new FormDialog.Builder(
-            (Frame) SwingUtilities.getWindowAncestor(this),
+            getParentFrame(),
             existingInsurance == null ? "Add Insurance" : "Edit Insurance");
 
     // Add form fields with initial values if editing
@@ -169,11 +107,7 @@ public class InsurancePanel extends JPanel {
 
             // Validate insurance ID
             if (id.isEmpty()) {
-              JOptionPane.showMessageDialog(
-                  this,
-                  "Insurance ID cannot be empty",
-                  "Validation Error",
-                  JOptionPane.ERROR_MESSAGE);
+              showError("Insurance ID cannot be empty", null);
               return;
             }
 
@@ -183,17 +117,16 @@ public class InsurancePanel extends JPanel {
             // Add or update insurance
             if (existingInsurance == null) {
               insuranceService.addInsurance(insurance);
-              JOptionPane.showMessageDialog(this, "Insurance added successfully");
+              showInfo("Insurance added successfully");
             } else {
               insuranceService.updateInsurance(insurance);
-              JOptionPane.showMessageDialog(this, "Insurance updated successfully");
+              showInfo("Insurance updated successfully");
             }
 
             // Refresh display
-            loadInsurances();
+            loadData();
           } catch (Exception ex) {
-            JOptionPane.showMessageDialog(
-                this, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            showError("Error", ex);
           }
         });
 
@@ -211,16 +144,11 @@ public class InsurancePanel extends JPanel {
     dialog.setVisible(true);
   }
 
-  private void showAdvancedFilterDialog() {
-    // Create a FormDialog.Builder for the filter dialog
-    FormDialog.Builder builder =
-        new FormDialog.Builder((Frame) SwingUtilities.getWindowAncestor(this), "Advanced Filter");
-
-    // Add filter fields
-    builder.addTextField("Insurance ID", "insuranceId");
-    builder.addTextField("Company", "company");
-    builder.addTextField("Address", "address");
-    builder.addTextField("Phone", "phone");
+  @Override
+  protected void showAdvancedFilterDialog() {
+    // Create filter dialog with the relevant fields
+    FormDialog.Builder builder = createFilterDialog(
+        "Advanced Filter", "insuranceId", "company", "address", "phone");
 
     // Define filter action
     builder.onSave(this::applyFilters);
@@ -232,11 +160,11 @@ public class InsurancePanel extends JPanel {
     dialog.setVisible(true);
   }
 
-  private void applyFilters(Map<String, Object> formData) {
+  @Override
+  protected void applyFilters(Map<String, Object> formData) {
     try {
       List<Insurance> insurances = insuranceService.getAllInsurances();
-      FilterResult<Insurance> result = new FilterResult<>(insurances);
-
+      
       // Define filter configurations for each field
       Map<String, Function<Insurance, String>> filterMappings =
           Map.of(
@@ -245,24 +173,17 @@ public class InsurancePanel extends JPanel {
               "address", Insurance::getAddress,
               "phone", Insurance::getPhone);
 
-      // Apply filters for non-empty fields
-      for (Map.Entry<String, Function<Insurance, String>> entry : filterMappings.entrySet()) {
-        String fieldName = entry.getKey();
-        Function<Insurance, String> getter = entry.getValue();
-
-        String filterValue = (String) formData.get(fieldName);
-        if (filterValue != null && !filterValue.isEmpty()) {
-          result = result.filter(filterValue, getter);
-        }
-      }
+      // Apply standard filters
+      FilterResult<Insurance> result = applyStandardFilters(insurances, formData, filterMappings);
 
       populateTable(result.getResults());
     } catch (Exception ex) {
-      JOptionPane.showMessageDialog(
-          this,
-          "Error filtering insurances: " + ex.getMessage(),
-          "Error",
-          JOptionPane.ERROR_MESSAGE);
+      showError("Error filtering insurances", ex);
     }
+  }
+
+  @Override
+  protected void deleteItem(Insurance insurance) throws Exception {
+    insuranceService.deleteInsurance(insurance.getInsuranceId());
   }
 }

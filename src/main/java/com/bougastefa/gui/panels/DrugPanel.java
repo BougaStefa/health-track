@@ -1,65 +1,36 @@
 package com.bougastefa.gui.panels;
 
-import com.bougastefa.gui.components.ButtonPanel;
-import com.bougastefa.gui.components.FilterResult;
+import com.bougastefa.gui.components.BasePanel;
 import com.bougastefa.gui.components.FormDialog;
 import com.bougastefa.models.Drug;
+import com.bougastefa.gui.components.FilterResult;
 import com.bougastefa.services.DrugService;
-import java.awt.*;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
 
-public class DrugPanel extends JPanel {
+public class DrugPanel extends BasePanel<Drug> {
   private final DrugService drugService;
-  private DefaultTableModel tableModel;
-  private JTable drugTable;
 
   public DrugPanel() {
+    super("Drug");
     drugService = new DrugService();
-    setLayout(new BorderLayout());
-
-    // Add button panel
-    ButtonPanel buttonPanel = new ButtonPanel("Drug");
-    buttonPanel.setAddButtonListener(e -> showDrugDialog(null));
-    buttonPanel.setEditButtonListener(e -> editSelectedDrug());
-    buttonPanel.setDeleteButtonListener(e -> deleteSelectedDrug());
-    buttonPanel.setFilterButtonListener(e -> showAdvancedFilterDialog());
-    buttonPanel.setRefreshButtonListener(e -> loadDrugs());
-
-    add(buttonPanel, BorderLayout.NORTH);
-
-    // Setup table for Drugs
-    setupDrugTable();
-    JScrollPane scrollPane = new JScrollPane(drugTable);
-    add(scrollPane, BorderLayout.CENTER);
-
-    // Initial load of drugs
-    loadDrugs();
+    loadData();
   }
 
-  private void setupDrugTable() {
-    String[] columnNames = {"Drug ID", "Name", "Side Effects", "Benefits"};
-    tableModel =
-        new DefaultTableModel(columnNames, 0) {
-          @Override
-          public boolean isCellEditable(int row, int column) {
-            return false;
-          }
-        };
-    drugTable = new JTable(tableModel);
-    drugTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+  @Override
+  protected String[] getColumnNames() {
+    return new String[] {"Drug ID", "Name", "Side Effects", "Benefits"};
   }
 
-  private void loadDrugs() {
+  @Override
+  protected void loadData() {
     try {
       List<Drug> drugs = drugService.getAllDrugs();
       populateTable(drugs);
     } catch (Exception ex) {
-      JOptionPane.showMessageDialog(
-          this, "Error loading drugs: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+      showError("Error loading drugs", ex);
     }
   }
 
@@ -73,65 +44,41 @@ public class DrugPanel extends JPanel {
     }
   }
 
-  private Drug getSelectedDrug() {
-    int row = drugTable.getSelectedRow();
+  @Override
+  protected Drug getSelectedItem() {
+    int row = dataTable.getSelectedRow();
     if (row != -1) {
       try {
         String drugId = (String) tableModel.getValueAt(row, 0);
         Drug drug = drugService.getDrugById(drugId);
         if (drug == null) {
-          JOptionPane.showMessageDialog(
-              this, "Could not find the selected drug", "Error", JOptionPane.ERROR_MESSAGE);
+          showError("Could not find the selected drug", null);
         }
         return drug;
       } catch (Exception ex) {
-        JOptionPane.showMessageDialog(
-            this,
-            "Error retrieving drug details: " + ex.getMessage(),
-            "Error",
-            JOptionPane.ERROR_MESSAGE);
+        showError("Error retrieving drug details", ex);
       }
     } else {
-      JOptionPane.showMessageDialog(
-          this, "Please select a drug first", "No Selection", JOptionPane.INFORMATION_MESSAGE);
+      showInfo("Please select a drug first");
     }
     return null;
   }
 
-  private void editSelectedDrug() {
-    Drug drug = getSelectedDrug();
-    if (drug != null) {
-      showDrugDialog(drug);
-    }
+  @Override
+  protected void showAddDialog() {
+    showDrugDialog(null);
   }
 
-  private void deleteSelectedDrug() {
-    Drug drug = getSelectedDrug();
-    if (drug != null) {
-      int result =
-          JOptionPane.showConfirmDialog(
-              this,
-              "Are you sure you want to delete this drug?",
-              "Confirm Delete",
-              JOptionPane.YES_NO_OPTION);
-      if (result == JOptionPane.YES_OPTION) {
-        try {
-          drugService.deleteDrug(drug.getDrugId());
-          loadDrugs();
-          JOptionPane.showMessageDialog(this, "Drug deleted successfully");
-        } catch (Exception ex) {
-          JOptionPane.showMessageDialog(
-              this, "Error deleting drug: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-        }
-      }
-    }
+  @Override
+  protected void showEditDialog(Drug drug) {
+    showDrugDialog(drug);
   }
 
   private void showDrugDialog(Drug existingDrug) {
     // Create FormDialog.Builder
     FormDialog.Builder builder =
         new FormDialog.Builder(
-            (Frame) SwingUtilities.getWindowAncestor(this),
+            getParentFrame(),
             existingDrug == null ? "Add Drug" : "Edit Drug");
 
     // Add form fields with initial values if editing
@@ -157,8 +104,7 @@ public class DrugPanel extends JPanel {
 
             // Validate drug ID
             if (id.isEmpty()) {
-              JOptionPane.showMessageDialog(
-                  this, "Drug ID cannot be empty", "Validation Error", JOptionPane.ERROR_MESSAGE);
+              showError("Drug ID cannot be empty", null);
               return;
             }
 
@@ -168,17 +114,16 @@ public class DrugPanel extends JPanel {
             // Add or update drug
             if (existingDrug == null) {
               drugService.addDrug(drug);
-              JOptionPane.showMessageDialog(this, "Drug added successfully");
+              showInfo("Drug added successfully");
             } else {
               drugService.updateDrug(drug);
-              JOptionPane.showMessageDialog(this, "Drug updated successfully");
+              showInfo("Drug updated successfully");
             }
 
             // Refresh display
-            loadDrugs();
+            loadData();
           } catch (Exception ex) {
-            JOptionPane.showMessageDialog(
-                this, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            showError("Error", ex);
           }
         });
 
@@ -196,16 +141,11 @@ public class DrugPanel extends JPanel {
     dialog.setVisible(true);
   }
 
-  private void showAdvancedFilterDialog() {
-    // Create a FormDialog.Builder for the filter dialog
-    FormDialog.Builder builder =
-        new FormDialog.Builder((Frame) SwingUtilities.getWindowAncestor(this), "Advanced Filter");
-
-    // Add filter fields
-    builder.addTextField("Drug ID", "drugId");
-    builder.addTextField("Name", "name");
-    builder.addTextField("Side Effects", "sideEffects");
-    builder.addTextField("Benefits", "benefits");
+  @Override
+  protected void showAdvancedFilterDialog() {
+    // Create a filter dialog with the relevant fields
+    FormDialog.Builder builder = createFilterDialog("Advanced Filter", 
+                                                   "drugId", "name", "sideEffects", "benefits");
 
     // Define filter action
     builder.onSave(this::applyFilters);
@@ -217,11 +157,11 @@ public class DrugPanel extends JPanel {
     dialog.setVisible(true);
   }
 
-  private void applyFilters(Map<String, Object> formData) {
+  @Override
+  protected void applyFilters(Map<String, Object> formData) {
     try {
       List<Drug> drugs = drugService.getAllDrugs();
-      FilterResult<Drug> result = new FilterResult<>(drugs);
-
+      
       // Define filter configurations for each field
       Map<String, Function<Drug, String>> filterMappings =
           Map.of(
@@ -230,21 +170,17 @@ public class DrugPanel extends JPanel {
               "sideEffects", Drug::getSideEffects,
               "benefits", Drug::getBenefits);
 
-      // Apply filters for non-empty fields
-      for (Map.Entry<String, Function<Drug, String>> entry : filterMappings.entrySet()) {
-        String fieldName = entry.getKey();
-        Function<Drug, String> getter = entry.getValue();
-
-        String filterValue = (String) formData.get(fieldName);
-        if (filterValue != null && !filterValue.isEmpty()) {
-          result = result.filter(filterValue, getter);
-        }
-      }
+      // Apply standard filters
+      FilterResult<Drug> result = applyStandardFilters(drugs, formData, filterMappings);
 
       populateTable(result.getResults());
     } catch (Exception ex) {
-      JOptionPane.showMessageDialog(
-          this, "Error filtering drugs: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+      showError("Error filtering drugs", ex);
     }
+  }
+
+  @Override
+  protected void deleteItem(Drug drug) throws Exception {
+    drugService.deleteDrug(drug.getDrugId());
   }
 }

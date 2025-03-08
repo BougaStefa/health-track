@@ -1,6 +1,6 @@
 package com.bougastefa.gui.panels;
 
-import com.bougastefa.gui.components.ButtonPanel;
+import com.bougastefa.gui.components.BasePanel;
 import com.bougastefa.gui.components.FilterResult;
 import com.bougastefa.gui.components.FormDialog;
 import com.bougastefa.models.Doctor;
@@ -10,69 +10,42 @@ import com.bougastefa.models.Specialist;
 import com.bougastefa.services.DoctorService;
 import com.bougastefa.services.PatientService;
 import com.bougastefa.services.VisitService;
-import java.awt.*;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
 
-public class PatientPanel extends JPanel {
-  private final PatientService patientService = new PatientService();
-  private final DoctorService doctorService = new DoctorService();
-  private final VisitService visitService = new VisitService();
-  private DefaultTableModel tableModel;
-  private JTable patientTable;
+public class PatientPanel extends BasePanel<Patient> {
+  private final PatientService patientService;
+  private final DoctorService doctorService;
+  private final VisitService visitService;
 
   public PatientPanel() {
-    setLayout(new BorderLayout());
-
-    ButtonPanel buttonPanel = new ButtonPanel("Patient");
-    buttonPanel.setAddButtonListener(e -> showPatientDialog(null));
-    buttonPanel.setEditButtonListener(e -> editSelectedPatient());
-    buttonPanel.setDeleteButtonListener(e -> deleteSelectedPatient());
-    buttonPanel.setFilterButtonListener(e -> showAdvancedFilterDialog());
-    buttonPanel.setRefreshButtonListener(e -> loadPatients());
-
+    super("Patient");
+    patientService = new PatientService();
+    doctorService = new DoctorService();
+    visitService = new VisitService();
+    
     // Add custom button for Primary Doctor functionality
-    buttonPanel.addCustomButton("Primary Doctor", e -> showPrimaryDoctorDetails());
-
-    add(buttonPanel, BorderLayout.NORTH);
-
-    // Setup table for Patients
-    setupPatientTable();
-    JScrollPane scrollPane = new JScrollPane(patientTable);
-    add(scrollPane, BorderLayout.CENTER);
-
-    // Initial load of patients
-    loadPatients();
+    addCustomButton("Primary Doctor", e -> showPrimaryDoctorDetails());
+    
+    loadData();
   }
 
-  private void setupPatientTable() {
-    String[] columnNames = {
+  @Override
+  protected String[] getColumnNames() {
+    return new String[] {
       "Patient ID", "First Name", "Surname", "Postcode", "Address", "Phone", "Email", "Insurance ID"
     };
-    tableModel =
-        new DefaultTableModel(columnNames, 0) {
-          @Override
-          public boolean isCellEditable(int row, int column) {
-            return false;
-          }
-        };
-
-    patientTable = new JTable(tableModel);
-    patientTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-    patientTable.getTableHeader().setReorderingAllowed(false);
-    patientTable.setFillsViewportHeight(true);
   }
 
-  private void loadPatients() {
+  @Override
+  protected void loadData() {
     try {
       List<Patient> patients = patientService.getAllPatients();
       populateTable(patients);
     } catch (Exception ex) {
-      JOptionPane.showMessageDialog(
-          this, "Error loading patients: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+      showError("Error loading patients", ex);
     }
   }
 
@@ -97,43 +70,41 @@ public class PatientPanel extends JPanel {
     }
   }
 
-  private Patient getSelectedPatient() {
-    int row = patientTable.getSelectedRow();
+  @Override
+  protected Patient getSelectedItem() {
+    int row = dataTable.getSelectedRow();
     if (row != -1) {
       try {
         String patientId = (String) tableModel.getValueAt(row, 0);
         Patient patient = patientService.getPatientById(patientId);
         if (patient == null) {
-          JOptionPane.showMessageDialog(
-              this, "Could not find the selected patient", "Error", JOptionPane.ERROR_MESSAGE);
+          showError("Could not find the selected patient", null);
         }
         return patient;
       } catch (Exception ex) {
-        JOptionPane.showMessageDialog(
-            this,
-            "Error retrieving patient details: " + ex.getMessage(),
-            "Error",
-            JOptionPane.ERROR_MESSAGE);
+        showError("Error retrieving patient details", ex);
       }
     } else {
-      JOptionPane.showMessageDialog(
-          this, "Please select a patient first", "No Selection", JOptionPane.INFORMATION_MESSAGE);
+      showInfo("Please select a patient first");
     }
     return null;
   }
 
-  private void editSelectedPatient() {
-    Patient patient = getSelectedPatient();
-    if (patient != null) {
-      showPatientDialog(patient);
-    }
+  @Override
+  protected void showAddDialog() {
+    showPatientDialog(null);
+  }
+
+  @Override
+  protected void showEditDialog(Patient patient) {
+    showPatientDialog(patient);
   }
 
   private void showPatientDialog(Patient existingPatient) {
     // Create FormDialog.Builder
     FormDialog.Builder builder =
         new FormDialog.Builder(
-            (Frame) SwingUtilities.getWindowAncestor(this),
+            getParentFrame(),
             existingPatient == null ? "Add Patient" : "Edit Patient");
 
     // Add form fields with initial values if editing
@@ -175,11 +146,7 @@ public class PatientPanel extends JPanel {
 
             // Validate patient ID
             if (patientId.isEmpty()) {
-              JOptionPane.showMessageDialog(
-                  this,
-                  "Patient ID cannot be empty",
-                  "Validation Error",
-                  JOptionPane.ERROR_MESSAGE);
+              showError("Patient ID cannot be empty", null);
               return;
             }
 
@@ -187,11 +154,7 @@ public class PatientPanel extends JPanel {
             Patient patient;
             if (isInsuredSelected) {
               if (insuranceId.isEmpty()) {
-                JOptionPane.showMessageDialog(
-                    this,
-                    "Insurance ID cannot be empty for insured patients",
-                    "Validation Error",
-                    JOptionPane.ERROR_MESSAGE);
+                showError("Insurance ID cannot be empty for insured patients", null);
                 return;
               }
               patient =
@@ -204,15 +167,14 @@ public class PatientPanel extends JPanel {
             // Add or update patient
             if (existingPatient == null) {
               patientService.addPatient(patient);
-              JOptionPane.showMessageDialog(this, "Patient added successfully");
+              showInfo("Patient added successfully");
             } else {
               patientService.updatePatient(patient);
-              JOptionPane.showMessageDialog(this, "Patient updated successfully");
+              showInfo("Patient updated successfully");
             }
-            loadPatients();
+            loadData();
           } catch (Exception ex) {
-            JOptionPane.showMessageDialog(
-                this, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            showError("Error", ex);
           }
         });
 
@@ -238,59 +200,27 @@ public class PatientPanel extends JPanel {
     dialog.setVisible(true);
   }
 
-  private void deleteSelectedPatient() {
-    Patient patient = getSelectedPatient();
-    if (patient != null) {
-      int result =
-          JOptionPane.showConfirmDialog(
-              this,
-              "Are you sure you want to delete this patient?",
-              "Confirm Delete",
-              JOptionPane.YES_NO_OPTION);
-      if (result == JOptionPane.YES_OPTION) {
-        try {
-          patientService.deletePatient(patient.getPatientId());
-          loadPatients();
-          JOptionPane.showMessageDialog(this, "Patient deleted successfully");
-        } catch (Exception ex) {
-          JOptionPane.showMessageDialog(
-              this,
-              "Error deleting patient: " + ex.getMessage(),
-              "Error",
-              JOptionPane.ERROR_MESSAGE);
-        }
-      }
-    }
-  }
-
   private void showPrimaryDoctorDetails() {
-    Patient selectedPatient = getSelectedPatient();
+    Patient selectedPatient = getSelectedItem();
     if (selectedPatient == null) {
-      JOptionPane.showMessageDialog(this, "Please select a patient first");
-      return;
+      return; // getSelectedItem() already shows a message
     }
 
     String primaryDoctorId = visitService.getPrimaryDoctorId(selectedPatient.getPatientId());
     if (primaryDoctorId == null) {
-      JOptionPane.showMessageDialog(
-          this,
-          "No primary doctor found. The patient has no recorded visits.",
-          "No Primary Doctor",
-          JOptionPane.INFORMATION_MESSAGE);
+      showInfo("No primary doctor found. The patient has no recorded visits.");
       return;
     }
 
     Doctor primaryDoctor = doctorService.getDoctorById(primaryDoctorId);
     if (primaryDoctor == null) {
-      JOptionPane.showMessageDialog(
-          this, "Error: Could not find doctor details", "Error", JOptionPane.ERROR_MESSAGE);
+      showError("Could not find doctor details", null);
       return;
     }
 
     // Create and show the doctor details dialog
     FormDialog.Builder builder =
-        new FormDialog.Builder(
-            (Frame) SwingUtilities.getWindowAncestor(this), "Primary Doctor Details");
+        new FormDialog.Builder(getParentFrame(), "Primary Doctor Details");
 
     // Add read-only fields for doctor details
     builder.addTextField("Doctor ID", "doctorId", primaryDoctor.getDoctorId());
@@ -312,34 +242,26 @@ public class PatientPanel extends JPanel {
     FormDialog dialog = builder.build();
 
     // Make all fields read-only
-    for (String fieldName :
-        List.of(
-            "doctorId", "firstName", "surname", "address", "email", "hospital", "specialization")) {
-      JComponent field = dialog.getField(fieldName);
-      if (field instanceof JTextField) {
-        ((JTextField) field).setEditable(false);
-      }
-    }
+    setupReadOnlyDialog(dialog, 
+        "doctorId", "firstName", "surname", "address", "email", "hospital", "specialization");
 
-    dialog.setSaveButtonText("Close");
-    dialog.setCancelButtonText("Cancel");
     dialog.setVisible(true);
   }
 
-  private void showAdvancedFilterDialog() {
+  @Override
+  protected void showAdvancedFilterDialog() {
     // Create a FormDialog.Builder for the filter dialog
-    FormDialog.Builder builder =
-        new FormDialog.Builder((Frame) SwingUtilities.getWindowAncestor(this), "Advanced Filter");
-
-    // Add filter fields
-    builder.addTextField("Patient ID", "patientId");
-    builder.addTextField("First Name", "firstName");
-    builder.addTextField("Surname", "surname");
-    builder.addTextField("Postcode", "postcode");
-    builder.addTextField("Address", "address");
-    builder.addTextField("Phone", "phone");
-    builder.addTextField("Email", "email");
-    builder.addTextField("Insurance ID", "insuranceId");
+    FormDialog.Builder builder = createFilterDialog(
+        "Advanced Filter",
+        "patientId",
+        "firstName",
+        "surname",
+        "postcode",
+        "address",
+        "phone",
+        "email",
+        "insuranceId"
+    );
 
     // Define filter action
     builder.onSave(this::applyFilters);
@@ -351,11 +273,11 @@ public class PatientPanel extends JPanel {
     dialog.setVisible(true);
   }
 
-  private void applyFilters(Map<String, Object> formData) {
+  @Override
+  protected void applyFilters(Map<String, Object> formData) {
     try {
       List<Patient> patients = patientService.getAllPatients();
-      FilterResult<Patient> result = new FilterResult<>(patients);
-
+      
       // Define filter configurations for each field
       Map<String, Function<Patient, String>> filterMappings =
           Map.of(
@@ -367,16 +289,8 @@ public class PatientPanel extends JPanel {
               "phone", Patient::getPhone,
               "email", Patient::getEmail);
 
-      // Apply filters for non-empty fields
-      for (Map.Entry<String, Function<Patient, String>> entry : filterMappings.entrySet()) {
-        String fieldName = entry.getKey();
-        Function<Patient, String> getter = entry.getValue();
-
-        String filterValue = (String) formData.get(fieldName);
-        if (filterValue != null && !filterValue.isEmpty()) {
-          result = result.filter(filterValue, getter);
-        }
-      }
+      // Apply standard filters
+      FilterResult<Patient> result = applyStandardFilters(patients, formData, filterMappings);
 
       // Special handling for insurance ID since it's in a subclass
       String insuranceIdFilter = (String) formData.get("insuranceId");
@@ -398,8 +312,12 @@ public class PatientPanel extends JPanel {
 
       populateTable(result.getResults());
     } catch (Exception ex) {
-      JOptionPane.showMessageDialog(
-          this, "Error filtering patients: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+      showError("Error filtering patients", ex);
     }
+  }
+
+  @Override
+  protected void deleteItem(Patient patient) throws Exception {
+    patientService.deletePatient(patient.getPatientId());
   }
 }

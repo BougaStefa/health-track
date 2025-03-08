@@ -1,70 +1,39 @@
 package com.bougastefa.gui.panels;
 
-import com.bougastefa.gui.components.ButtonPanel;
+import com.bougastefa.gui.components.BasePanel;
 import com.bougastefa.gui.components.FilterResult;
 import com.bougastefa.gui.components.FormDialog;
 import com.bougastefa.models.Doctor;
 import com.bougastefa.models.Specialist;
 import com.bougastefa.services.DoctorService;
-import java.awt.*;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
 
-public class DoctorPanel extends JPanel {
+public class DoctorPanel extends BasePanel<Doctor> {
   private final DoctorService doctorService;
-  private DefaultTableModel tableModel;
-  private JTable doctorTable;
 
   public DoctorPanel() {
+    super("Doctor");
     doctorService = new DoctorService();
-    setLayout(new BorderLayout());
-
-    // Add button panel
-    ButtonPanel buttonPanel = new ButtonPanel("Doctor");
-    buttonPanel.setAddButtonListener(e -> showDoctorDialog(null));
-    buttonPanel.setEditButtonListener(e -> editSelectedDoctor());
-    buttonPanel.setDeleteButtonListener(e -> deleteSelectedDoctor());
-    buttonPanel.setFilterButtonListener(e -> showAdvancedFilterDialog());
-    buttonPanel.setRefreshButtonListener(e -> loadDoctors());
-
-    add(buttonPanel, BorderLayout.NORTH);
-
-    // Setup table for Doctors
-    setupDoctorTable();
-    JScrollPane scrollPane = new JScrollPane(doctorTable);
-    add(scrollPane, BorderLayout.CENTER);
-
-    // Initial load of doctors
-    loadDoctors();
+    loadData();
   }
 
-  private void setupDoctorTable() {
-    String[] columnNames = {
+  @Override
+  protected String[] getColumnNames() {
+    return new String[] {
       "Doctor ID", "First Name", "Surname", "Address", "Email", "Hospital", "Specialization"
     };
-    tableModel =
-        new DefaultTableModel(columnNames, 0) {
-          @Override
-          public boolean isCellEditable(int row, int column) {
-            return false;
-          }
-        };
-    doctorTable = new JTable(tableModel);
-    doctorTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-    doctorTable.getTableHeader().setReorderingAllowed(false);
-    doctorTable.setFillsViewportHeight(true);
   }
 
-  private void loadDoctors() {
+  @Override
+  protected void loadData() {
     try {
       List<Doctor> doctors = doctorService.getAllDoctors();
       populateTable(doctors);
     } catch (Exception ex) {
-      JOptionPane.showMessageDialog(
-          this, "Error loading doctors: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+      showError("Error loading doctors", ex);
     }
   }
 
@@ -89,68 +58,41 @@ public class DoctorPanel extends JPanel {
     }
   }
 
-  private Doctor getSelectedDoctor() {
-    int row = doctorTable.getSelectedRow();
+  @Override
+  protected Doctor getSelectedItem() {
+    int row = dataTable.getSelectedRow();
     if (row != -1) {
       try {
         String doctorId = (String) tableModel.getValueAt(row, 0);
         Doctor doctor = doctorService.getDoctorById(doctorId);
         if (doctor == null) {
-          JOptionPane.showMessageDialog(
-              this, "Could not find the selected doctor", "Error", JOptionPane.ERROR_MESSAGE);
+          showError("Could not find the selected doctor", null);
         }
         return doctor;
       } catch (Exception ex) {
-        JOptionPane.showMessageDialog(
-            this,
-            "Error retrieving doctor details: " + ex.getMessage(),
-            "Error",
-            JOptionPane.ERROR_MESSAGE);
+        showError("Error retrieving doctor details", ex);
       }
     } else {
-      JOptionPane.showMessageDialog(
-          this, "Please select a doctor first", "No Selection", JOptionPane.INFORMATION_MESSAGE);
+      showInfo("Please select a doctor first");
     }
     return null;
   }
 
-  private void editSelectedDoctor() {
-    Doctor doctor = getSelectedDoctor();
-    if (doctor != null) {
-      showDoctorDialog(doctor);
-    }
+  @Override
+  protected void showAddDialog() {
+    showDoctorDialog(null);
   }
 
-  private void deleteSelectedDoctor() {
-    Doctor doctor = getSelectedDoctor();
-    if (doctor != null) {
-      int result =
-          JOptionPane.showConfirmDialog(
-              this,
-              "Are you sure you want to delete this doctor?",
-              "Confirm Delete",
-              JOptionPane.YES_NO_OPTION);
-      if (result == JOptionPane.YES_OPTION) {
-        try {
-          doctorService.deleteDoctor(doctor.getDoctorId());
-          loadDoctors();
-          JOptionPane.showMessageDialog(this, "Doctor deleted successfully");
-        } catch (Exception ex) {
-          JOptionPane.showMessageDialog(
-              this,
-              "Error deleting doctor: " + ex.getMessage(),
-              "Error",
-              JOptionPane.ERROR_MESSAGE);
-        }
-      }
-    }
+  @Override
+  protected void showEditDialog(Doctor doctor) {
+    showDoctorDialog(doctor);
   }
 
-   private void showDoctorDialog(Doctor existingDoctor) {
+  private void showDoctorDialog(Doctor existingDoctor) {
     // Create FormDialog.Builder
     FormDialog.Builder builder =
         new FormDialog.Builder(
-            (Frame) SwingUtilities.getWindowAncestor(this),
+            getParentFrame(),
             existingDoctor == null ? "Add Doctor" : "Edit Doctor");
 
     // Add form fields with initial values if editing
@@ -189,8 +131,7 @@ public class DoctorPanel extends JPanel {
 
             // Validate doctor ID
             if (doctorId.isEmpty()) {
-              JOptionPane.showMessageDialog(
-                  this, "Doctor ID cannot be empty", "Validation Error", JOptionPane.ERROR_MESSAGE);
+              showError("Doctor ID cannot be empty", null);
               return;
             }
 
@@ -198,11 +139,7 @@ public class DoctorPanel extends JPanel {
             Doctor doctor;
             if (isSpecialistSelected) {
               if (specialization.isEmpty()) {
-                JOptionPane.showMessageDialog(
-                    this,
-                    "Specialization cannot be empty for specialists",
-                    "Validation Error",
-                    JOptionPane.ERROR_MESSAGE);
+                showError("Specialization cannot be empty for specialists", null);
                 return;
               }
               doctor = new Specialist(doctorId, firstName, surname, address, email, hospital, specialization);
@@ -213,15 +150,14 @@ public class DoctorPanel extends JPanel {
             // Add or update doctor
             if (existingDoctor == null) {
               doctorService.addDoctor(doctor);
-              JOptionPane.showMessageDialog(this, "Doctor added successfully");
+              showInfo("Doctor added successfully");
             } else {
               doctorService.updateDoctor(doctor);
-              JOptionPane.showMessageDialog(this, "Doctor updated successfully");
+              showInfo("Doctor updated successfully");
             }
-            loadDoctors();
+            loadData();
           } catch (Exception ex) {
-            JOptionPane.showMessageDialog(
-                this, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            showError("Error", ex);
           }
         });
 
@@ -247,19 +183,19 @@ public class DoctorPanel extends JPanel {
     dialog.setVisible(true);
   }
 
-  private void showAdvancedFilterDialog() {
-    // Create a FormDialog.Builder for the filter dialog
-    FormDialog.Builder builder =
-        new FormDialog.Builder((Frame) SwingUtilities.getWindowAncestor(this), "Advanced Filter");
-
-    // Add filter fields
-    builder.addTextField("Doctor ID", "doctorId");
-    builder.addTextField("First Name", "firstName");
-    builder.addTextField("Surname", "surname");
-    builder.addTextField("Address", "address");
-    builder.addTextField("Email", "email");
-    builder.addTextField("Hospital", "hospital");
-    builder.addTextField("Specialization", "specialization");
+  @Override
+  protected void showAdvancedFilterDialog() {
+    // Create filter dialog with the relevant fields
+    FormDialog.Builder builder = createFilterDialog(
+        "Advanced Filter",
+        "doctorId",
+        "firstName",
+        "surname",
+        "address",
+        "email",
+        "hospital",
+        "specialization"
+    );
 
     // Define filter action
     builder.onSave(this::applyFilters);
@@ -271,11 +207,11 @@ public class DoctorPanel extends JPanel {
     dialog.setVisible(true);
   }
 
-  private void applyFilters(Map<String, Object> formData) {
+  @Override
+  protected void applyFilters(Map<String, Object> formData) {
     try {
       List<Doctor> doctors = doctorService.getAllDoctors();
-      FilterResult<Doctor> result = new FilterResult<>(doctors);
-
+      
       // Define filter configurations for standard fields
       Map<String, Function<Doctor, String>> filterMappings =
           Map.of(
@@ -287,15 +223,7 @@ public class DoctorPanel extends JPanel {
               "hospital", Doctor::getHospital);
 
       // Apply standard filters for non-empty fields
-      for (Map.Entry<String, Function<Doctor, String>> entry : filterMappings.entrySet()) {
-        String fieldName = entry.getKey();
-        Function<Doctor, String> getter = entry.getValue();
-
-        String filterValue = (String) formData.get(fieldName);
-        if (filterValue != null && !filterValue.isEmpty()) {
-          result = result.filter(filterValue, getter);
-        }
-      }
+      FilterResult<Doctor> result = applyStandardFilters(doctors, formData, filterMappings);
 
       // Special handling for specialization since it's in a subclass
       String specializationFilter = (String) formData.get("specialization");
@@ -319,8 +247,12 @@ public class DoctorPanel extends JPanel {
 
       populateTable(result.getResults());
     } catch (Exception ex) {
-      JOptionPane.showMessageDialog(
-          this, "Error filtering doctors: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+      showError("Error filtering doctors", ex);
     }
+  }
+
+  @Override
+  protected void deleteItem(Doctor doctor) throws Exception {
+    doctorService.deleteDoctor(doctor.getDoctorId());
   }
 }

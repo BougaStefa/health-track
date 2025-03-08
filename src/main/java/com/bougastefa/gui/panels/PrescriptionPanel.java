@@ -1,11 +1,10 @@
 package com.bougastefa.gui.panels;
 
-import com.bougastefa.gui.components.ButtonPanel;
+import com.bougastefa.gui.components.BasePanel;
 import com.bougastefa.gui.components.FilterResult;
 import com.bougastefa.gui.components.FormDialog;
 import com.bougastefa.models.Prescription;
 import com.bougastefa.services.PrescriptionService;
-import java.awt.*;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -13,30 +12,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
 
-public class PrescriptionPanel extends JPanel {
+public class PrescriptionPanel extends BasePanel<Prescription> {
   private final PrescriptionService prescriptionService;
-  private final DefaultTableModel tableModel;
-  private final JTable prescriptionTable;
   private final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
   public PrescriptionPanel() {
+    super("Prescription");
     prescriptionService = new PrescriptionService();
-    setLayout(new BorderLayout());
+    loadData();
+  }
 
-    // Replace custom button panels with ButtonPanel component
-    ButtonPanel buttonPanel = new ButtonPanel("Prescription");
-    buttonPanel.setAddButtonListener(e -> showPrescriptionDialog(null));
-    buttonPanel.setEditButtonListener(e -> editSelectedPrescription());
-    buttonPanel.setDeleteButtonListener(e -> deleteSelectedPrescription());
-    buttonPanel.setFilterButtonListener(e -> showAdvancedFilterDialog());
-    buttonPanel.setRefreshButtonListener(e -> loadPrescriptions());
-
-    add(buttonPanel, BorderLayout.NORTH);
-
-    // Setup table for Prescriptions
-    String[] columnNames = {
+  @Override
+  protected String[] getColumnNames() {
+    return new String[] {
       "Prescription ID",
       "Date",
       "Drug ID",
@@ -46,33 +35,15 @@ public class PrescriptionPanel extends JPanel {
       "Duration",
       "Comment"
     };
-    tableModel =
-        new DefaultTableModel(columnNames, 0) {
-          @Override
-          public boolean isCellEditable(int row, int column) {
-            return false;
-          }
-        };
-
-    prescriptionTable = new JTable(tableModel);
-    prescriptionTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-    JScrollPane scrollPane = new JScrollPane(prescriptionTable);
-    add(scrollPane, BorderLayout.CENTER);
-
-    // Initial load of prescriptions
-    loadPrescriptions();
   }
 
-  private void loadPrescriptions() {
+  @Override
+  protected void loadData() {
     try {
       List<Prescription> prescriptions = prescriptionService.getAllPrescriptions();
       populateTable(prescriptions);
     } catch (Exception ex) {
-      JOptionPane.showMessageDialog(
-          this,
-          "Error loading prescriptions: " + ex.getMessage(),
-          "Error",
-          JOptionPane.ERROR_MESSAGE);
+      showError("Error loading prescriptions", ex);
     }
   }
 
@@ -93,41 +64,41 @@ public class PrescriptionPanel extends JPanel {
     }
   }
 
-  private Prescription getSelectedPrescription() {
-    int row = prescriptionTable.getSelectedRow();
+  @Override
+  protected Prescription getSelectedItem() {
+    int row = dataTable.getSelectedRow();
     if (row != -1) {
       try {
         String prescriptionId = (String) tableModel.getValueAt(row, 0);
-        return prescriptionService.getPrescriptionById(prescriptionId);
+        Prescription prescription = prescriptionService.getPrescriptionById(prescriptionId);
+        if (prescription == null) {
+          showError("Could not find the selected prescription", null);
+        }
+        return prescription;
       } catch (Exception ex) {
-        JOptionPane.showMessageDialog(
-            this,
-            "Error retrieving prescription details: " + ex.getMessage(),
-            "Error",
-            JOptionPane.ERROR_MESSAGE);
+        showError("Error retrieving prescription details", ex);
       }
     } else {
-      JOptionPane.showMessageDialog(
-          this,
-          "Please select a prescription first",
-          "No Selection",
-          JOptionPane.INFORMATION_MESSAGE);
+      showInfo("Please select a prescription first");
     }
     return null;
   }
 
-  private void editSelectedPrescription() {
-    Prescription prescription = getSelectedPrescription();
-    if (prescription != null) {
-      showPrescriptionDialog(prescription);
-    }
+  @Override
+  protected void showAddDialog() {
+    showPrescriptionDialog(null);
+  }
+
+  @Override
+  protected void showEditDialog(Prescription prescription) {
+    showPrescriptionDialog(prescription);
   }
 
   private void showPrescriptionDialog(Prescription existingPrescription) {
     // Create FormDialog.Builder
     FormDialog.Builder builder =
         new FormDialog.Builder(
-            (Frame) SwingUtilities.getWindowAncestor(this),
+            getParentFrame(),
             existingPrescription == null ? "Add Prescription" : "Edit Prescription");
 
     // Add form fields with initial values if editing
@@ -170,19 +141,27 @@ public class PrescriptionPanel extends JPanel {
 
             // Validate prescription ID
             if (id.isEmpty()) {
-              JOptionPane.showMessageDialog(
-                  this,
-                  "Prescription ID cannot be empty",
-                  "Validation Error",
-                  JOptionPane.ERROR_MESSAGE);
+              showError("Prescription ID cannot be empty", null);
               return;
             }
 
             // Parse date and numeric values
-            LocalDate date =
-                dateText.isEmpty() ? LocalDate.now() : LocalDate.parse(dateText, dateFormatter);
-            int dosage = dosageText.isEmpty() ? 0 : Integer.parseInt(dosageText);
-            int duration = durationText.isEmpty() ? 0 : Integer.parseInt(durationText);
+            LocalDate date;
+            try {
+              date = dateText.isEmpty() ? LocalDate.now() : LocalDate.parse(dateText, dateFormatter);
+            } catch (DateTimeParseException dtpe) {
+              showError("Please enter the date in YYYY-MM-DD format or leave it empty for today's date", dtpe);
+              return;
+            }
+            
+            int dosage, duration;
+            try {
+              dosage = dosageText.isEmpty() ? 0 : Integer.parseInt(dosageText);
+              duration = durationText.isEmpty() ? 0 : Integer.parseInt(durationText);
+            } catch (NumberFormatException nfe) {
+              showError("Please enter valid numbers for dosage and duration or leave them empty", nfe);
+              return;
+            }
 
             // Create prescription object
             Prescription prescription =
@@ -191,29 +170,16 @@ public class PrescriptionPanel extends JPanel {
             // Add or update prescription
             if (existingPrescription == null) {
               prescriptionService.addPrescription(prescription);
-              JOptionPane.showMessageDialog(this, "Prescription added successfully");
+              showInfo("Prescription added successfully");
             } else {
               prescriptionService.updatePrescription(prescription);
-              JOptionPane.showMessageDialog(this, "Prescription updated successfully");
+              showInfo("Prescription updated successfully");
             }
 
             // Refresh display
-            loadPrescriptions();
-          } catch (DateTimeParseException dtpe) {
-            JOptionPane.showMessageDialog(
-                this,
-                "Please enter the date in YYYY-MM-DD format or leave it empty for today's date",
-                "Invalid Date Format",
-                JOptionPane.ERROR_MESSAGE);
-          } catch (NumberFormatException nfe) {
-            JOptionPane.showMessageDialog(
-                this,
-                "Please enter valid numbers for dosage and duration or leave them empty",
-                "Invalid Number Format",
-                JOptionPane.ERROR_MESSAGE);
+            loadData();
           } catch (Exception ex) {
-            JOptionPane.showMessageDialog(
-                this, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            showError("Error", ex);
           }
         });
 
@@ -231,45 +197,20 @@ public class PrescriptionPanel extends JPanel {
     dialog.setVisible(true);
   }
 
-  private void deleteSelectedPrescription() {
-    Prescription prescription = getSelectedPrescription();
-    if (prescription != null) {
-      int result =
-          JOptionPane.showConfirmDialog(
-              this,
-              "Are you sure you want to delete this prescription?",
-              "Confirm Delete",
-              JOptionPane.YES_NO_OPTION);
-      if (result == JOptionPane.YES_OPTION) {
-        try {
-          prescriptionService.deletePrescription(prescription.getPrescriptionId());
-          loadPrescriptions();
-          JOptionPane.showMessageDialog(this, "Prescription deleted successfully");
-        } catch (Exception ex) {
-          JOptionPane.showMessageDialog(
-              this,
-              "Error deleting prescription: " + ex.getMessage(),
-              "Error",
-              JOptionPane.ERROR_MESSAGE);
-        }
-      }
-    }
-  }
-
-  private void showAdvancedFilterDialog() {
-    // Create a FormDialog.Builder for the filter dialog
-    FormDialog.Builder builder =
-        new FormDialog.Builder((Frame) SwingUtilities.getWindowAncestor(this), "Advanced Filter");
-
-    // Add filter fields
-    builder.addTextField("Prescription ID", "prescriptionId");
-    builder.addTextField("Date", "date");
-    builder.addTextField("Drug ID", "drugId");
-    builder.addTextField("Doctor ID", "doctorId");
-    builder.addTextField("Patient ID", "patientId");
-    builder.addTextField("Dosage", "dosage");
-    builder.addTextField("Duration", "duration");
-    builder.addTextField("Comment", "comment");
+  @Override
+  protected void showAdvancedFilterDialog() {
+    // Create a filter dialog with the relevant fields
+    FormDialog.Builder builder = createFilterDialog(
+        "Advanced Filter",
+        "prescriptionId",
+        "date",
+        "drugId",
+        "doctorId",
+        "patientId",
+        "dosage",
+        "duration",
+        "comment"
+    );
 
     // Define filter action
     builder.onSave(this::applyFilters);
@@ -281,11 +222,11 @@ public class PrescriptionPanel extends JPanel {
     dialog.setVisible(true);
   }
 
-  private void applyFilters(Map<String, Object> formData) {
+  @Override
+  protected void applyFilters(Map<String, Object> formData) {
     try {
       List<Prescription> prescriptions = prescriptionService.getAllPrescriptions();
-      FilterResult<Prescription> result = new FilterResult<>(prescriptions);
-
+      
       // Define filter configurations for each field
       Map<String, Function<Prescription, String>> filterMappings =
           Map.ofEntries(
@@ -298,24 +239,17 @@ public class PrescriptionPanel extends JPanel {
               Map.entry("duration", p -> String.valueOf(p.getDuration())),
               Map.entry("comment", Prescription::getComment));
 
-      // Apply filters for non-empty fields
-      for (Map.Entry<String, Function<Prescription, String>> entry : filterMappings.entrySet()) {
-        String fieldName = entry.getKey();
-        Function<Prescription, String> getter = entry.getValue();
-
-        String filterValue = (String) formData.get(fieldName);
-        if (filterValue != null && !filterValue.isEmpty()) {
-          result = result.filter(filterValue, getter);
-        }
-      }
+      // Apply standard filters
+      FilterResult<Prescription> result = applyStandardFilters(prescriptions, formData, filterMappings);
 
       populateTable(result.getResults());
     } catch (Exception ex) {
-      JOptionPane.showMessageDialog(
-          this,
-          "Error filtering prescriptions: " + ex.getMessage(),
-          "Error",
-          JOptionPane.ERROR_MESSAGE);
+      showError("Error filtering prescriptions", ex);
     }
+  }
+
+  @Override
+  protected void deleteItem(Prescription prescription) throws Exception {
+    prescriptionService.deletePrescription(prescription.getPrescriptionId());
   }
 }
