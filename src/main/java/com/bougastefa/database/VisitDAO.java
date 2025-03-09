@@ -6,8 +6,19 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Data Access Object (DAO) class for managing Visit entities in the database.
+ * Provides methods for performing CRUD operations (Create, Read, Update, Delete)
+ * on the Visit table in the database. Visit records represent patient consultations
+ * with doctors and contain medical information such as symptoms and diagnosis.
+ */
 public class VisitDAO {
-  // Insert a new visit
+  /**
+   * Inserts a new visit record into the database.
+   * 
+   * @param visit The Visit object containing the data to be inserted
+   * @throws SQLException If a database access error occurs
+   */
   public void addVisit(Visit visit) throws SQLException {
     // SQL query to insert a new visit
     String sql =
@@ -25,7 +36,12 @@ public class VisitDAO {
     }
   }
 
-  // Retrieve all visits
+  /**
+   * Retrieves all visits from the database.
+   * 
+   * @return A List containing all visit records in the database
+   * @throws SQLException If a database access error occurs
+   */
   public List<Visit> getAllVisits() throws SQLException {
     List<Visit> visits = new ArrayList<>();
     String sql = "SELECT * FROM Visit";
@@ -48,7 +64,16 @@ public class VisitDAO {
     return visits;
   }
 
-  // Retrieve visit by ID(s)
+  /**
+   * Retrieves a specific visit from the database using the composite primary key.
+   * The visit is uniquely identified by a combination of patientId, doctorId, and dateOfVisit.
+   * 
+   * @param patientId The ID of the patient involved in the visit
+   * @param doctorId The ID of the doctor conducting the visit
+   * @param dateOfVisit The date when the visit occurred
+   * @return The Visit object if found, or null if no matching visit exists
+   * @throws SQLException If a database access error occurs
+   */
   public Visit getVisit(String patientId, String doctorId, LocalDate dateOfVisit)
       throws SQLException {
     // SQL query to retrieve a visit by patient ID, doctor ID, and date of visit (composite key)
@@ -74,7 +99,14 @@ public class VisitDAO {
     return null;
   }
 
-  // Update a visit
+  /**
+   * Updates an existing visit record in the database.
+   * Only the symptoms and diagnosis fields can be updated; the composite key
+   * (patientId, doctorId, dateOfVisit) is used to identify which record to update.
+   * 
+   * @param visit The Visit object containing the updated information
+   * @throws SQLException If a database access error occurs
+   */
   public void updateVisit(Visit visit) throws SQLException {
     String sql =
         "UPDATE Visit SET symptoms = ?, diagnosis = ? WHERE patientID = ? AND doctorID = ? AND"
@@ -91,7 +123,14 @@ public class VisitDAO {
     }
   }
 
-  // Delete a visit
+  /**
+   * Deletes a visit record from the database using the composite primary key.
+   * 
+   * @param patientId The ID of the patient involved in the visit
+   * @param doctorId The ID of the doctor conducting the visit
+   * @param dateOfVisit The date when the visit occurred
+   * @throws SQLException If a database access error occurs
+   */
   public void deleteVisit(String patientId, String doctorId, LocalDate dateOfVisit)
       throws SQLException {
     String sql = "DELETE FROM Visit WHERE patientID = ? AND doctorID = ? AND dateOfVisit = ?";
@@ -105,7 +144,15 @@ public class VisitDAO {
     }
   }
 
-  // Find Primary Doctor based on amount of visit for patient
+  /**
+   * Determines which doctor has seen a particular patient most frequently,
+   * making them the patient's "primary doctor".
+   * 
+   * @param patientId The ID of the patient to find the primary doctor for
+   * @return The ID of the doctor who has conducted the most visits with this patient,
+   *         or null if the patient has no recorded visits
+   * @throws SQLException If a database access error occurs
+   */
   public String getPrimaryDoctorId(String patientId) throws SQLException {
     /* SQL query to retrieve the doctor with the most visits for a patient
     Not checking if there are multiple doctors with the same number of visits

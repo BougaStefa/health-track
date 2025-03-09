@@ -6,8 +6,20 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Data Access Object (DAO) class for Doctor entities.
+ * This class provides methods for CRUD (Create, Read, Update, Delete) operations
+ * on Doctor records in the database, handling both regular doctors and specialists.
+ */
 public class DoctorDAO {
-  // Insert a new doctor
+  /**
+   * Inserts a new doctor record into the database.
+   * Handles both regular doctors and specialists by using different SQL statements
+   * based on the doctor type.
+   *
+   * @param doctor The doctor object to be added to the database
+   * @throws SQLException If a database access error occurs
+   */
   public void addDoctor(Doctor doctor) throws SQLException {
     String sql;
     // Check if the doctor is a specialist, create the appropriate SQL query
@@ -41,7 +53,14 @@ public class DoctorDAO {
     }
   }
 
-  // Retrieve all doctors from the database
+  /**
+   * Retrieves all doctor records from the database.
+   * Creates appropriate Doctor or Specialist objects based on whether
+   * the specialization field is set.
+   *
+   * @return A list containing all doctors in the database
+   * @throws SQLException If a database access error occurs
+   */
   public List<Doctor> getAllDoctors() throws SQLException {
     List<Doctor> doctors = new ArrayList<>();
     String sql = "SELECT * FROM Doctor";
@@ -74,7 +93,14 @@ public class DoctorDAO {
     return doctors;
   }
 
-  // Retrieve doctor by ID
+  /**
+   * Retrieves a doctor record from the database by its ID.
+   * Creates either a Doctor or Specialist object based on the database record.
+   *
+   * @param doctorId The unique identifier of the doctor to retrieve
+   * @return The doctor object if found, null otherwise
+   * @throws SQLException If a database access error occurs
+   */
   public Doctor getDoctorById(String doctorId) throws SQLException {
     String sql = "SELECT * FROM Doctor WHERE doctorID = ?";
     // Connection, statement and result set are automatically closed after the try block
@@ -109,7 +135,13 @@ public class DoctorDAO {
     return null;
   }
 
-  // Update a doctor
+  /**
+   * Updates an existing doctor record in the database.
+   * Uses different SQL statements for regular doctors and specialists.
+   *
+   * @param doctor The doctor object with updated information
+   * @throws SQLException If a database access error occurs
+   */
   public void updateDoctor(Doctor doctor) throws SQLException {
     String sql;
     // Check if the doctor is a specialist, create the appropriate SQL query
@@ -145,7 +177,12 @@ public class DoctorDAO {
     }
   }
 
-  // Delete a doctor
+  /**
+   * Deletes a doctor record from the database based on its ID.
+   *
+   * @param doctorId The unique identifier of the doctor to delete
+   * @throws SQLException If a database access error occurs
+   */
   public void deleteDoctor(String doctorId) throws SQLException {
     String sql = "DELETE FROM Doctor WHERE doctorID = ?";
     // Connection and statement are automatically closed after the try block
