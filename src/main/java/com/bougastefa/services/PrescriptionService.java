@@ -8,11 +8,25 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Service class that manages the business logic for Prescription entities.
+ * This class acts as an intermediary between the controller layer and the data access layer,
+ * providing validation, error handling, and logging for all prescription-related operations.
+ * It ensures data integrity and consistent behavior when interacting with prescription records.
+ */
 public class PrescriptionService {
   private PrescriptionDAO prescriptionDAO = new PrescriptionDAO();
   private static final Logger logger = LoggerFactory.getLogger(PrescriptionService.class);
 
-  // Add a new prescription
+  /**
+   * Adds a new prescription to the system after performing validation checks.
+   * Validates that the prescription object is not null and that a prescription with 
+   * the same ID doesn't already exist in the database.
+   *
+   * @param prescription The Prescription object to be added
+   * @throws IllegalArgumentException If the prescription is null or if a prescription with the same ID already exists
+   * @throws ServiceException If a database error occurs while adding the prescription
+   */
   public void addPrescription(Prescription prescription) {
     if (prescription == null) {
       throw new IllegalArgumentException("Prescription cannot be null");
@@ -30,7 +44,13 @@ public class PrescriptionService {
     }
   }
 
-  // Retrieve all prescriptions
+  /**
+   * Retrieves all prescriptions from the database.
+   * Returns an unmodifiable list to prevent clients from modifying the returned data,
+   * ensuring data integrity. Returns an empty list if an error occurs or if no prescriptions exist.
+   *
+   * @return An unmodifiable List containing all prescriptions, or an empty list if none found or an error occurs
+   */
   public List<Prescription> getAllPrescriptions() {
     try {
       List<Prescription> prescriptions = prescriptionDAO.getAllPrescriptions();
@@ -44,7 +64,14 @@ public class PrescriptionService {
     }
   }
 
-  // Retrieve a prescription by ID
+  /**
+   * Retrieves a specific prescription by its ID.
+   * Validates that the provided ID is not null or empty before querying the database.
+   *
+   * @param prescriptionId The unique identifier of the prescription to retrieve
+   * @return The Prescription object if found, or null if the prescription doesn't exist or an error occurs
+   * @throws IllegalArgumentException If the prescriptionId is null or empty
+   */
   public Prescription getPrescriptionById(String prescriptionId) {
     if (prescriptionId == null || prescriptionId.isEmpty()) {
       throw new IllegalArgumentException("Prescription ID cannot be empty");
@@ -57,7 +84,15 @@ public class PrescriptionService {
     }
   }
 
-  // Update a prescription
+  /**
+   * Updates an existing prescription's information in the database.
+   * Validates that the prescription object is not null before proceeding with the update.
+   * This method assumes the prescription already exists in the database.
+   *
+   * @param prescription The Prescription object containing updated information
+   * @throws IllegalArgumentException If the prescription is null
+   * @throws ServiceException If a database error occurs while updating the prescription
+   */
   public void updatePrescription(Prescription prescription) {
     if (prescription == null) {
       throw new IllegalArgumentException("Prescription cannot be null");
@@ -71,7 +106,15 @@ public class PrescriptionService {
     }
   }
 
-  // Delete a prescription
+  /**
+   * Deletes a prescription from the database by its ID.
+   * Validates that the provided ID is not null or empty before attempting deletion.
+   * This operation permanently removes the prescription record from the system.
+   *
+   * @param prescriptionId The unique identifier of the prescription to delete
+   * @throws IllegalArgumentException If the prescriptionId is null or empty
+   * @throws ServiceException If a database error occurs while deleting the prescription
+   */
   public void deletePrescription(String prescriptionId) {
     if (prescriptionId == null || prescriptionId.isEmpty()) {
       throw new IllegalArgumentException("Prescription ID cannot be empty");

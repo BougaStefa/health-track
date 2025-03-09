@@ -7,11 +7,24 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Service class that handles business logic for Doctor entities.
+ * This class acts as an intermediary between the controller layer and the data access layer,
+ * providing a higher-level API for doctor-related operations while handling exceptions,
+ * validation, and logging.
+ */
 public class DoctorService {
   private DoctorDAO doctorDAO = new DoctorDAO();
   private static final Logger logger = LoggerFactory.getLogger(DoctorService.class);
 
-  // Add a new doctor
+  /**
+   * Adds a new doctor to the system after performing validation checks.
+   * Validates that the doctor object is not null and that the doctor ID doesn't already exist.
+   *
+   * @param doctor The Doctor object to be added
+   * @throws IllegalArgumentException If the doctor is null or the doctor ID already exists
+   * @throws ServiceException If a database error occurs while adding the doctor
+   */
   public void addDoctor(Doctor doctor) {
     if (doctor == null) {
       throw new IllegalArgumentException("Doctor cannot be null");
@@ -29,17 +42,30 @@ public class DoctorService {
     }
   }
 
-  // Retrieve all doctors
+  /**
+   * Retrieves all doctors from the database.
+   * Returns an empty list instead of throwing exceptions if a database error occurs,
+   * providing more robust behavior for UI components.
+   *
+   * @return A List containing all doctors, or an empty list if an error occurs
+   */
   public List<Doctor> getAllDoctors() {
     try {
       return doctorDAO.getAllDoctors();
     } catch (SQLException e) {
       logger.error("Error fetching doctors", e);
-      return List.of(); // Return an empty list on error
+      return List.of();
     }
   }
 
-  // Retrieve a doctor by ID
+  /**
+   * Retrieves a specific doctor by their ID.
+   * Validates that the provided ID is not null or empty before querying the database.
+   *
+   * @param doctorId The unique identifier of the doctor to retrieve
+   * @return The Doctor object if found, or null if the doctor doesn't exist or an error occurs
+   * @throws IllegalArgumentException If the doctorId is null or empty
+   */
   public Doctor getDoctorById(String doctorId) {
     if (doctorId == null || doctorId.isEmpty()) {
       throw new IllegalArgumentException("Doctor ID cannot be empty");
@@ -52,7 +78,14 @@ public class DoctorService {
     }
   }
 
-  // Update a doctor
+  /**
+   * Updates an existing doctor's information in the database.
+   * Validates that the doctor object is not null before proceeding with the update.
+   *
+   * @param doctor The Doctor object containing updated information
+   * @throws IllegalArgumentException If the doctor is null
+   * @throws ServiceException If a database error occurs while updating the doctor
+   */
   public void updateDoctor(Doctor doctor) {
     if (doctor == null) {
       throw new IllegalArgumentException("Doctor cannot be null");
@@ -66,7 +99,16 @@ public class DoctorService {
     }
   }
 
-  // Delete a doctor
+  /**
+   * Deletes a doctor from the database by their ID.
+   * Validates that the provided ID is not null or empty before attempting deletion.
+   * Note: This operation may fail if the doctor is referenced by other records
+   * in the database (e.g., visits, prescriptions).
+   *
+   * @param doctorId The unique identifier of the doctor to delete
+   * @throws IllegalArgumentException If the doctorId is null or empty
+   * @throws ServiceException If a database error occurs while deleting the doctor
+   */
   public void deleteDoctor(String doctorId) {
     if (doctorId == null || doctorId.isEmpty()) {
       throw new IllegalArgumentException("Doctor ID cannot be empty");
