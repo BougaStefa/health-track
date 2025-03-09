@@ -21,16 +21,28 @@ import javax.swing.table.DefaultTableModel;
 
 /**
  * An abstract base panel class that provides common functionality for all entity panels.
+ * This class implements a standard layout and behavior for entity management screens,
+ * including a table for displaying entities and buttons for CRUD operations.
+ * It uses the Template Method design pattern to define a skeleton for entity management,
+ * with abstract methods that subclasses must implement for entity-specific behavior.
  * 
- * @param <T> The entity type managed by this panel
+ * @param <T> The entity type managed by this panel (e.g., Patient, Doctor, Drug)
  */
 public abstract class BasePanel<T> extends JPanel {
+    /** Model that holds the data displayed in the table */
     protected DefaultTableModel tableModel;
+    
+    /** Table component that displays the entity data */
     protected JTable dataTable;
+    
+    /** Panel containing action buttons for this entity type */
     protected ButtonPanel buttonPanel;
 
     /**
      * Creates a new BasePanel.
+     * Initializes the standard layout with a button panel at the top and a data table 
+     * in the center. Sets up default button actions that delegate to abstract methods
+     * which subclasses must implement.
      * 
      * @param entityName The name of the entity managed by this panel (e.g., "Patient", "Doctor")
      */
@@ -60,14 +72,16 @@ public abstract class BasePanel<T> extends JPanel {
     
     /**
      * Gets the column names for this entity's table.
-     * Must be implemented by subclasses.
+     * Must be implemented by subclasses to define the structure of the data table.
      * 
-     * @return An array of column names
+     * @return An array of column names for the table header
      */
     protected abstract String[] getColumnNames();
     
     /**
      * Optional method for subclasses to customize the table beyond the defaults.
+     * This hook method allows subclasses to add entity-specific customizations
+     * such as column renderers, resizing behavior, or selection listeners.
      * 
      * @param table The JTable to customize
      */
@@ -78,6 +92,8 @@ public abstract class BasePanel<T> extends JPanel {
     
     /**
      * Adds a custom button to the button panel.
+     * This method allows subclasses to extend the standard button set with
+     * entity-specific actions when needed (e.g., a "Medical History" button for patients).
      * 
      * @param buttonText The text to display on the button
      * @param listener The action listener to handle button clicks
@@ -88,36 +104,47 @@ public abstract class BasePanel<T> extends JPanel {
     
     /**
      * Loads data into the table.
-     * Must be implemented by subclasses to load entity-specific data.
+     * Must be implemented by subclasses to retrieve entity-specific data
+     * from the data source and populate the table.
      */
     protected abstract void loadData();
     
     /**
      * Gets the selected item from the table.
+     * Must be implemented by subclasses to map from the selected table row
+     * to the corresponding entity object.
      * 
-     * @return The selected item or null if no item is selected
+     * @return The selected entity or null if no row is selected
      */
     protected abstract T getSelectedItem();
     
     /**
      * Shows a dialog to add a new item.
+     * Must be implemented by subclasses to display an entity-specific form
+     * for creating a new entity of type T.
      */
     protected abstract void showAddDialog();
     
     /**
      * Shows a dialog to edit an existing item.
+     * Must be implemented by subclasses to display an entity-specific form
+     * pre-populated with the data from the provided entity.
      * 
-     * @param item The item to edit
+     * @param item The entity to edit
      */
     protected abstract void showEditDialog(T item);
     
     /**
      * Shows a dialog for advanced filtering.
+     * Must be implemented by subclasses to display an entity-specific filter form
+     * that allows users to search or filter the displayed entities.
      */
     protected abstract void showAdvancedFilterDialog();
     
     /**
      * Applies filters to the data and updates the display.
+     * Must be implemented by subclasses to filter the displayed data
+     * based on the criteria provided in the filter form.
      * 
      * @param formData The filter criteria from the filter dialog
      */
@@ -125,6 +152,9 @@ public abstract class BasePanel<T> extends JPanel {
     
     /**
      * Edits the selected item.
+     * Gets the currently selected entity and displays the edit dialog if an item is selected.
+     * This template method delegates to getSelectedItem() and showEditDialog(),
+     * which subclasses must implement.
      */
     protected void editSelectedItem() {
         T selectedItem = getSelectedItem();
@@ -135,6 +165,8 @@ public abstract class BasePanel<T> extends JPanel {
     
     /**
      * Deletes the selected item after confirmation.
+     * Prompts the user for confirmation before deleting, then calls the abstract
+     * deleteItem() method that subclasses must implement to perform the actual deletion.
      */
     protected void deleteSelectedItem() {
         T selectedItem = getSelectedItem();
@@ -165,7 +197,7 @@ public abstract class BasePanel<T> extends JPanel {
     
     /**
      * Deletes an item from the data source.
-     * Must be implemented by subclasses to handle entity-specific deletion.
+     * Must be implemented by subclasses to handle entity-specific deletion logic.
      * 
      * @param item The item to delete
      * @throws Exception if deletion fails
@@ -174,6 +206,8 @@ public abstract class BasePanel<T> extends JPanel {
     
     /**
      * Creates a table model with the given column names.
+     * Implements a non-editable table model to prevent users from directly
+     * editing the table cells (editing is handled through the edit dialog instead).
      * 
      * @param columnNames The column names for the table
      * @return A DefaultTableModel with the specified columns
@@ -182,7 +216,7 @@ public abstract class BasePanel<T> extends JPanel {
         DefaultTableModel model = new DefaultTableModel(columnNames, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return false;
+                return false; // Make all cells non-editable
             }
         };
         return model;
@@ -190,6 +224,8 @@ public abstract class BasePanel<T> extends JPanel {
     
     /**
      * Creates a standard JTable with common settings.
+     * Configures the table with single-selection mode, non-reorderable columns,
+     * and other common settings for consistency across the application.
      * 
      * @param model The table model to use
      * @return A configured JTable
@@ -204,6 +240,7 @@ public abstract class BasePanel<T> extends JPanel {
     
     /**
      * Gets the parent frame for dialogs.
+     * Utility method to find the parent Frame component for use when creating modal dialogs.
      * 
      * @return The parent frame
      */
@@ -213,6 +250,8 @@ public abstract class BasePanel<T> extends JPanel {
     
     /**
      * Applies standard filters to a list of items.
+     * Generic helper method that implements standard string-based filtering for entity lists.
+     * This reduces code duplication in subclasses by handling common filtering logic.
      * 
      * @param <E> The entity type
      * @param items The items to filter
@@ -243,6 +282,7 @@ public abstract class BasePanel<T> extends JPanel {
     
     /**
      * Shows an error message.
+     * Utility method to display a standardized error message dialog.
      * 
      * @param message The error message
      * @param ex The exception (can be null)
@@ -254,6 +294,7 @@ public abstract class BasePanel<T> extends JPanel {
     
     /**
      * Shows an information message.
+     * Utility method to display a standardized information dialog.
      * 
      * @param message The message to show
      */
@@ -263,6 +304,8 @@ public abstract class BasePanel<T> extends JPanel {
     
     /**
      * Helper method for creating a standard form dialog with filter fields.
+     * Creates a dialog with text fields for filtering based on the provided field names.
+     * Automatically converts camelCase field names to Title Case labels for better readability.
      * 
      * @param title The dialog title
      * @param fieldNames The filter field names
@@ -283,24 +326,26 @@ public abstract class BasePanel<T> extends JPanel {
     
     /**
      * Sets up a standard form dialog with readonly fields.
+     * Configures the specified fields to be non-editable, typically used for
+     * displaying entity information in a read-only view.
      * 
      * @param dialog The form dialog to configure
      * @param fieldNames The names of fields to make read-only
      */
-protected void setupReadOnlyDialog(FormDialog dialog, String... fieldNames) {
-    for (String fieldName : fieldNames) {
-        JComponent field = dialog.getField(fieldName);
-        if (field instanceof JTextField) {
-            JTextField textField = (JTextField) field;
-            textField.setEditable(false);
-            
-            // Keep the normal background but add a subtle border change
-            // to indicate read-only status
-            textField.setBorder(BorderFactory.createLineBorder(new Color(180, 180, 180)));
+    protected void setupReadOnlyDialog(FormDialog dialog, String... fieldNames) {
+        for (String fieldName : fieldNames) {
+            JComponent field = dialog.getField(fieldName);
+            if (field instanceof JTextField) {
+                JTextField textField = (JTextField) field;
+                textField.setEditable(false);
+                
+                // Keep the normal background but add a subtle border change
+                // to indicate read-only status
+                textField.setBorder(BorderFactory.createLineBorder(new Color(180, 180, 180)));
+            }
         }
+        
+        dialog.setSaveButtonText("Close");
+        dialog.setCancelButtonText("Cancel");
     }
-    
-    dialog.setSaveButtonText("Close");
-    dialog.setCancelButtonText("Cancel");
-}
 }
