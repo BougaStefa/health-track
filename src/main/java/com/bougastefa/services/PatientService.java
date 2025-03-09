@@ -16,6 +16,10 @@ public class PatientService {
     if (patient == null) {
       throw new IllegalArgumentException("Patient cannot be null");
     }
+    Patient existingPatient = getPatientById(patient.getPatientId());
+    if(existingPatient != null){
+      throw new IllegalArgumentException("Patient with ID " + patient.getPatientId() + " already exists");
+    }
     try {
       patientDAO.addPatient(patient);
       logger.info("Patient added successfully: {}", patient.getPatientId());

@@ -16,6 +16,10 @@ public class InsuranceService {
     if (insurance == null) {
       throw new IllegalArgumentException("Insurance cannot be null");
     }
+    Insurance existingInsurance = getInsuranceById(insurance.getInsuranceId());
+    if (existingInsurance != null) {
+      throw new IllegalArgumentException("Insurance ID already exists: " + insurance.getInsuranceId());
+    }
     try {
       insuranceDAO.addInsurance(insurance);
       logger.info("Insurance added successfully: {}", insurance.getInsuranceId());

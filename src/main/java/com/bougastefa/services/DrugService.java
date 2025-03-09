@@ -16,6 +16,10 @@ public class DrugService {
     if (drug == null) {
       throw new IllegalArgumentException("Drug cannot be null");
     }
+    Drug existingDrug = getDrugById(drug.getDrugId());
+    if (existingDrug != null) {
+      throw new IllegalArgumentException("Drug ID already exists: " + drug.getDrugId());
+    }
     try {
       drugDAO.addDrug(drug);
       logger.info("Drug added successfully: {}", drug.getDrugId());

@@ -17,6 +17,10 @@ public class PrescriptionService {
     if (prescription == null) {
       throw new IllegalArgumentException("Prescription cannot be null");
     }
+    Prescription existingPrescription = getPrescriptionById(prescription.getPrescriptionId());
+    if (existingPrescription != null) {
+      throw new IllegalArgumentException("Prescription ID already exists: " + prescription.getPrescriptionId());
+    }
     try {
       prescriptionDAO.addPrescription(prescription);
       logger.info("Prescription added successfully: {}", prescription.getPrescriptionId());

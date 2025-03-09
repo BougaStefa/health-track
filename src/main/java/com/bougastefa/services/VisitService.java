@@ -17,6 +17,16 @@ public class VisitService {
     if (visit == null) {
       throw new IllegalArgumentException("Visit cannot be null");
     }
+    Visit existingVisit = getVisit(visit.getPatientId(), visit.getDoctorId(), visit.getDateOfVisit());
+    if (existingVisit != null) {
+      throw new IllegalArgumentException(
+          "Visit already exists for patient: "
+              + visit.getPatientId()
+              + ", doctor: "
+              + visit.getDoctorId()
+              + ", date: "
+              + visit.getDateOfVisit());
+    }
     try {
       visitDAO.addVisit(visit);
       logger.info(
