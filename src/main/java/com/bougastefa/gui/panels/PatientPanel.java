@@ -15,11 +15,30 @@ import java.util.Map;
 import java.util.function.Function;
 import javax.swing.*;
 
+/**
+ * Panel for managing Patient entities in the application.
+ * This panel extends BasePanel to provide specialized functionality for patient management,
+ * including adding, editing, deleting, and filtering patients. It handles both regular
+ * Patient objects and InsuredPatient subclasses, with special UI components for
+ * insurance-related fields. Additionally, it provides functionality to display
+ * information about a patient's primary doctor (the doctor they have visited most often).
+ */
 public class PatientPanel extends BasePanel<Patient> {
+  /** Service object that handles business logic and data operations for patients */
   private final PatientService patientService;
+  
+  /** Service object used for retrieving doctor information */
   private final DoctorService doctorService;
+  
+  /** Service object used to determine a patient's primary doctor based on visit history */
   private final VisitService visitService;
 
+  /**
+   * Constructs a new PatientPanel.
+   * Initializes the panel with the "Patient" title, sets up the required services,
+   * adds a custom button for viewing the patient's primary doctor details,
+   * and loads initial patient data.
+   */
   public PatientPanel() {
     super("Patient");
     patientService = new PatientService();
@@ -32,6 +51,10 @@ public class PatientPanel extends BasePanel<Patient> {
     loadData();
   }
 
+  /**
+   * {@inheritDoc}
+   * Defines the column names for the patient table, including a special column for insurance ID.
+   */
   @Override
   protected String[] getColumnNames() {
     return new String[] {
@@ -39,6 +62,11 @@ public class PatientPanel extends BasePanel<Patient> {
     };
   }
 
+  /**
+   * {@inheritDoc}
+   * Loads all patients from the service and populates the table with the data.
+   * Handles any exceptions that may occur during the data loading process.
+   */
   @Override
   protected void loadData() {
     try {
@@ -49,9 +77,17 @@ public class PatientPanel extends BasePanel<Patient> {
     }
   }
 
+  /**
+   * Populates the table with patient data.
+   * Handles both regular Patient and InsuredPatient objects, showing the insurance ID
+   * for insured patients and an empty string for regular patients.
+   * 
+   * @param patients The list of patients to display in the table
+   */
   private void populateTable(List<Patient> patients) {
     tableModel.setRowCount(0);
     for (Patient patient : patients) {
+      // Check if this patient is insured and get insurance ID if available
       String insuranceId = "";
       if (patient instanceof InsuredPatient) {
         insuranceId = ((InsuredPatient) patient).getInsuranceId();
@@ -70,6 +106,13 @@ public class PatientPanel extends BasePanel<Patient> {
     }
   }
 
+  /**
+   * {@inheritDoc}
+   * Retrieves the currently selected patient from the table.
+   * Maps the selected row to a Patient object by using the patientId to look up the full object.
+   * 
+   * @return The selected Patient object, or null if no row is selected or an error occurs
+   */
   @Override
   protected Patient getSelectedItem() {
     int row = dataTable.getSelectedRow();
@@ -90,18 +133,38 @@ public class PatientPanel extends BasePanel<Patient> {
     return null;
   }
 
+  /**
+   * {@inheritDoc}
+   * Shows a dialog for adding a new patient.
+   * Calls showPatientDialog with null to indicate a new patient is being created.
+   */
   @Override
   protected void showAddDialog() {
     showPatientDialog(null);
   }
 
+  /**
+   * {@inheritDoc}
+   * Shows a dialog for editing an existing patient.
+   * Calls showPatientDialog with the patient object to pre-populate the form.
+   * 
+   * @param patient The patient to edit
+   */
   @Override
   protected void showEditDialog(Patient patient) {
     showPatientDialog(patient);
   }
 
+  /**
+   * Creates and displays a form dialog for adding or editing a patient.
+   * Sets up the form with fields for all patient properties, including conditional
+   * insurance-related fields for insured patients. The dialog dynamically enables
+   * or disables the insurance ID field based on the "Is Insured" checkbox.
+   * 
+   * @param existingPatient The patient to edit, or null if creating a new patient
+   */
   private void showPatientDialog(Patient existingPatient) {
-    // Create FormDialog.Builder
+    // Create FormDialog.Builder with appropriate title based on operation type
     FormDialog.Builder builder =
         new FormDialog.Builder(
             getParentFrame(),
@@ -116,9 +179,11 @@ public class PatientPanel extends BasePanel<Patient> {
     String phoneValue = existingPatient != null ? existingPatient.getPhone() : "";
     String emailValue = existingPatient != null ? existingPatient.getEmail() : "";
 
+    // Determine if this patient is insured for initial checkbox state and insurance ID value
     boolean isInsured = existingPatient instanceof InsuredPatient;
     String insuranceIdValue = isInsured ? ((InsuredPatient) existingPatient).getInsuranceId() : "";
 
+    // Add all form fields to the dialog
     builder.addTextField("Patient ID", "patientId", idValue);
     builder.addTextField("First Name", "firstName", firstNameValue);
     builder.addTextField("Surname", "surname", surnameValue);
@@ -129,11 +194,11 @@ public class PatientPanel extends BasePanel<Patient> {
     builder.addCheckBox("Is Insured", "isInsured", isInsured);
     builder.addTextField("Insurance ID", "insuranceId", insuranceIdValue);
 
-    // Define save action
+    // Define save action that will be called when form is submitted
     builder.onSave(
         formData -> {
           try {
-            // Extract form data
+            // Extract form data from the submitted form
             String patientId = (String) formData.get("patientId");
             String firstName = (String) formData.get("firstName");
             String surname = (String) formData.get("surname");
@@ -150,9 +215,10 @@ public class PatientPanel extends BasePanel<Patient> {
               return;
             }
 
-            // Create patient object
+            // Create appropriate patient object based on insurance status
             Patient patient;
             if (isInsuredSelected) {
+              // For insured patients, validate insurance ID and create InsuredPatient
               if (insuranceId.isEmpty()) {
                 showError("Insurance ID cannot be empty for insured patients", null);
                 return;
@@ -161,10 +227,11 @@ public class PatientPanel extends BasePanel<Patient> {
                   new InsuredPatient(
                       patientId, firstName, surname, postcode, address, phone, email, insuranceId);
             } else {
+              // For regular patients, create standard Patient object
               patient = new Patient(patientId, firstName, surname, postcode, address, phone, email);
             }
 
-            // Add or update patient
+            // Add or update patient based on whether we're editing or creating
             if (existingPatient == null) {
               patientService.addPatient(patient);
               showInfo("Patient added successfully");
@@ -172,6 +239,8 @@ public class PatientPanel extends BasePanel<Patient> {
               patientService.updatePatient(patient);
               showInfo("Patient updated successfully");
             }
+            
+            // Refresh display to show changes
             loadData();
           } catch (Exception ex) {
             showError("Error", ex);
@@ -181,7 +250,7 @@ public class PatientPanel extends BasePanel<Patient> {
     // Create and show the dialog
     FormDialog dialog = builder.build();
 
-    // Disable ID field if editing
+    // Disable ID field if editing (since ID is the primary key and shouldn't change)
     if (existingPatient != null) {
       JComponent idField = dialog.getField("patientId");
       if (idField instanceof JTextField) {
@@ -193,25 +262,36 @@ public class PatientPanel extends BasePanel<Patient> {
     JCheckBox insuredCheckbox = (JCheckBox) dialog.getField("isInsured");
     JTextField insuranceIdField = (JTextField) dialog.getField("insuranceId");
 
+    // Set initial enabled state based on checkbox
     insuranceIdField.setEnabled(insuredCheckbox.isSelected());
+    // Add listener to update enabled state whenever checkbox changes
     insuredCheckbox.addActionListener(
         e -> insuranceIdField.setEnabled(insuredCheckbox.isSelected()));
 
     dialog.setVisible(true);
   }
 
+  /**
+   * Shows a dialog with details about the selected patient's primary doctor.
+   * The primary doctor is defined as the doctor the patient has visited most frequently.
+   * If the patient has no visits, or if the doctor information cannot be found,
+   * appropriate error messages are displayed.
+   */
   private void showPrimaryDoctorDetails() {
+    // Get the currently selected patient
     Patient selectedPatient = getSelectedItem();
     if (selectedPatient == null) {
-      return; // getSelectedItem() already shows a message
+      return; // getSelectedItem() already shows a message if nothing is selected
     }
 
+    // Find the primary doctor ID based on visit frequency
     String primaryDoctorId = visitService.getPrimaryDoctorId(selectedPatient.getPatientId());
     if (primaryDoctorId == null) {
       showInfo("No primary doctor found. The patient has no recorded visits.");
       return;
     }
 
+    // Get the full doctor details
     Doctor primaryDoctor = doctorService.getDoctorById(primaryDoctorId);
     if (primaryDoctor == null) {
       showError("Could not find doctor details", null);
@@ -241,16 +321,22 @@ public class PatientPanel extends BasePanel<Patient> {
 
     FormDialog dialog = builder.build();
 
-    // Make all fields read-only
+    // Make all fields read-only since this is just a view
     setupReadOnlyDialog(dialog, 
         "doctorId", "firstName", "surname", "address", "email", "hospital", "specialization");
 
     dialog.setVisible(true);
   }
 
+  /**
+   * {@inheritDoc}
+   * Shows a dialog for advanced filtering of patients.
+   * Creates a filter form with fields corresponding to all patient properties,
+   * including the insurance ID field for filtering insured patients.
+   */
   @Override
   protected void showAdvancedFilterDialog() {
-    // Create a FormDialog.Builder for the filter dialog
+    // Create filter dialog with the relevant fields
     FormDialog.Builder builder = createFilterDialog(
         "Advanced Filter",
         "patientId",
@@ -263,7 +349,7 @@ public class PatientPanel extends BasePanel<Patient> {
         "insuranceId"
     );
 
-    // Define filter action
+    // Define filter action to be called when filter is applied
     builder.onSave(this::applyFilters);
 
     // Create and customize the dialog
@@ -273,12 +359,21 @@ public class PatientPanel extends BasePanel<Patient> {
     dialog.setVisible(true);
   }
 
+  /**
+   * {@inheritDoc}
+   * Applies filter criteria to the list of patients and updates the table.
+   * Uses the FilterResult helper class for standard fields, with special handling
+   * for the insuranceId field which requires type checking to identify InsuredPatient objects.
+   * 
+   * @param formData Map of field names to filter values from the filter dialog
+   */
   @Override
   protected void applyFilters(Map<String, Object> formData) {
     try {
+      // Get all patients to start with
       List<Patient> patients = patientService.getAllPatients();
       
-      // Define filter configurations for each field
+      // Define filter configurations for standard fields
       Map<String, Function<Patient, String>> filterMappings =
           Map.of(
               "patientId", Patient::getPatientId,
@@ -289,12 +384,13 @@ public class PatientPanel extends BasePanel<Patient> {
               "phone", Patient::getPhone,
               "email", Patient::getEmail);
 
-      // Apply standard filters
+      // Apply standard filters for each field using the helper method from BasePanel
       FilterResult<Patient> result = applyStandardFilters(patients, formData, filterMappings);
 
       // Special handling for insurance ID since it's in a subclass
       String insuranceIdFilter = (String) formData.get("insuranceId");
       if (insuranceIdFilter != null && !insuranceIdFilter.isEmpty()) {
+        // Filter patients to only include insured patients with matching insurance ID
         List<Patient> filteredByInsuranceId =
             result.getResults().stream()
                 .filter(
@@ -310,12 +406,22 @@ public class PatientPanel extends BasePanel<Patient> {
         result = new FilterResult<>(filteredByInsuranceId);
       }
 
+      // Update the table with the filtered results
       populateTable(result.getResults());
     } catch (Exception ex) {
       showError("Error filtering patients", ex);
     }
   }
 
+  /**
+   * {@inheritDoc}
+   * Deletes a patient from the system.
+   * Note: This operation may fail if there are visits or prescriptions associated with this patient,
+   * as there will be foreign key constraints in the database.
+   * 
+   * @param patient The patient to delete
+   * @throws Exception If deletion fails
+   */
   @Override
   protected void deleteItem(Patient patient) throws Exception {
     patientService.deletePatient(patient.getPatientId());

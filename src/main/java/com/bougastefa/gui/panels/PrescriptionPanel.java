@@ -13,16 +13,37 @@ import java.util.Map;
 import java.util.function.Function;
 import javax.swing.*;
 
+/**
+ * Panel for managing Prescription entities in the application.
+ * This panel extends BasePanel to provide specialized functionality for prescription management,
+ * including adding, editing, deleting, and filtering prescriptions. It handles date formatting
+ * for prescription dates and provides a detailed form for entering prescription information
+ * including drug ID, doctor ID, patient ID, dosage, duration, and comments.
+ */
 public class PrescriptionPanel extends BasePanel<Prescription> {
+  /** Service object that handles business logic and data operations for prescriptions */
   private final PrescriptionService prescriptionService;
+  
+  /** 
+   * Date formatter for consistent display and parsing of prescription dates.
+   * Uses ISO-8601 format (YYYY-MM-DD) for compatibility and clarity.
+   */
   private final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
+  /**
+   * Constructs a new PrescriptionPanel.
+   * Initializes the panel with the "Prescription" title and loads initial prescription data.
+   */
   public PrescriptionPanel() {
     super("Prescription");
     prescriptionService = new PrescriptionService();
     loadData();
   }
 
+  /**
+   * {@inheritDoc}
+   * Defines the column names for the prescription table, showing all relevant prescription details.
+   */
   @Override
   protected String[] getColumnNames() {
     return new String[] {
@@ -37,6 +58,11 @@ public class PrescriptionPanel extends BasePanel<Prescription> {
     };
   }
 
+  /**
+   * {@inheritDoc}
+   * Loads all prescriptions from the service and populates the table with the data.
+   * Handles any exceptions that may occur during the data loading process.
+   */
   @Override
   protected void loadData() {
     try {
@@ -47,6 +73,12 @@ public class PrescriptionPanel extends BasePanel<Prescription> {
     }
   }
 
+  /**
+   * Populates the table with prescription data.
+   * Formats dates using the dateFormatter to ensure consistent display.
+   * 
+   * @param prescriptions The list of prescriptions to display in the table
+   */
   private void populateTable(List<Prescription> prescriptions) {
     tableModel.setRowCount(0);
     for (Prescription prescription : prescriptions) {
@@ -64,6 +96,13 @@ public class PrescriptionPanel extends BasePanel<Prescription> {
     }
   }
 
+  /**
+   * {@inheritDoc}
+   * Retrieves the currently selected prescription from the table.
+   * Maps the selected row to a Prescription object by using the prescriptionId to look up the full object.
+   * 
+   * @return The selected Prescription object, or null if no row is selected or an error occurs
+   */
   @Override
   protected Prescription getSelectedItem() {
     int row = dataTable.getSelectedRow();
@@ -84,18 +123,37 @@ public class PrescriptionPanel extends BasePanel<Prescription> {
     return null;
   }
 
+  /**
+   * {@inheritDoc}
+   * Shows a dialog for adding a new prescription.
+   * Calls showPrescriptionDialog with null to indicate a new prescription is being created.
+   */
   @Override
   protected void showAddDialog() {
     showPrescriptionDialog(null);
   }
 
+  /**
+   * {@inheritDoc}
+   * Shows a dialog for editing an existing prescription.
+   * Calls showPrescriptionDialog with the prescription object to pre-populate the form.
+   * 
+   * @param prescription The prescription to edit
+   */
   @Override
   protected void showEditDialog(Prescription prescription) {
     showPrescriptionDialog(prescription);
   }
 
+  /**
+   * Creates and displays a form dialog for adding or editing a prescription.
+   * Sets up the form with fields for all prescription properties, including
+   * date field with proper formatting instructions for the user.
+   * 
+   * @param existingPrescription The prescription to edit, or null if creating a new prescription
+   */
   private void showPrescriptionDialog(Prescription existingPrescription) {
-    // Create FormDialog.Builder
+    // Create FormDialog.Builder with appropriate title based on operation type
     FormDialog.Builder builder =
         new FormDialog.Builder(
             getParentFrame(),
@@ -116,6 +174,7 @@ public class PrescriptionPanel extends BasePanel<Prescription> {
         existingPrescription != null ? String.valueOf(existingPrescription.getDuration()) : "";
     String commentValue = existingPrescription != null ? existingPrescription.getComment() : "";
 
+    // Add text fields for all prescription properties
     builder.addTextField("Prescription ID", "prescriptionId", idValue);
     builder.addTextField("Date (YYYY-MM-DD)", "date", dateValue);
     builder.addTextField("Drug ID", "drugId", drugIdValue);
@@ -125,11 +184,11 @@ public class PrescriptionPanel extends BasePanel<Prescription> {
     builder.addTextField("Duration (days)", "duration", durationValue);
     builder.addTextField("Comment", "comment", commentValue);
 
-    // Define save action
+    // Define save action that will be called when form is submitted
     builder.onSave(
         formData -> {
           try {
-            // Extract form data
+            // Extract form data from the submitted form
             String id = (String) formData.get("prescriptionId");
             String dateText = (String) formData.get("date");
             String drugId = (String) formData.get("drugId");
@@ -145,7 +204,7 @@ public class PrescriptionPanel extends BasePanel<Prescription> {
               return;
             }
 
-            // Parse date and numeric values
+            // Parse date value, using current date as default if empty
             LocalDate date;
             try {
               date = dateText.isEmpty() ? LocalDate.now() : LocalDate.parse(dateText, dateFormatter);
@@ -154,6 +213,7 @@ public class PrescriptionPanel extends BasePanel<Prescription> {
               return;
             }
             
+            // Parse numeric values, using 0 as default if empty
             int dosage, duration;
             try {
               dosage = dosageText.isEmpty() ? 0 : Integer.parseInt(dosageText);
@@ -163,11 +223,11 @@ public class PrescriptionPanel extends BasePanel<Prescription> {
               return;
             }
 
-            // Create prescription object
+            // Create prescription object with the form data
             Prescription prescription =
                 new Prescription(id, date, dosage, duration, comment, drugId, doctorId, patientId);
 
-            // Add or update prescription
+            // Add or update prescription based on whether we're editing or creating
             if (existingPrescription == null) {
               prescriptionService.addPrescription(prescription);
               showInfo("Prescription added successfully");
@@ -176,7 +236,7 @@ public class PrescriptionPanel extends BasePanel<Prescription> {
               showInfo("Prescription updated successfully");
             }
 
-            // Refresh display
+            // Refresh display to show changes
             loadData();
           } catch (Exception ex) {
             showError("Error", ex);
@@ -186,7 +246,7 @@ public class PrescriptionPanel extends BasePanel<Prescription> {
     // Create and show the dialog
     FormDialog dialog = builder.build();
 
-    // Disable ID field if editing
+    // Disable ID field if editing (since ID is the primary key and shouldn't change)
     if (existingPrescription != null) {
       JComponent idField = dialog.getField("prescriptionId");
       if (idField instanceof JTextField) {
@@ -197,9 +257,14 @@ public class PrescriptionPanel extends BasePanel<Prescription> {
     dialog.setVisible(true);
   }
 
+  /**
+   * {@inheritDoc}
+   * Shows a dialog for advanced filtering of prescriptions.
+   * Creates a filter form with fields corresponding to all prescription properties.
+   */
   @Override
   protected void showAdvancedFilterDialog() {
-    // Create a filter dialog with the relevant fields
+    // Create filter dialog with the relevant fields
     FormDialog.Builder builder = createFilterDialog(
         "Advanced Filter",
         "prescriptionId",
@@ -212,7 +277,7 @@ public class PrescriptionPanel extends BasePanel<Prescription> {
         "comment"
     );
 
-    // Define filter action
+    // Define filter action to be called when filter is applied
     builder.onSave(this::applyFilters);
 
     // Create and customize the dialog
@@ -222,12 +287,21 @@ public class PrescriptionPanel extends BasePanel<Prescription> {
     dialog.setVisible(true);
   }
 
+  /**
+   * {@inheritDoc}
+   * Applies filter criteria to the list of prescriptions and updates the table.
+   * Maps numeric fields (dosage, duration) to strings for consistent filtering and
+   * formats dates using the dateFormatter for proper comparison.
+   * 
+   * @param formData Map of field names to filter values from the filter dialog
+   */
   @Override
   protected void applyFilters(Map<String, Object> formData) {
     try {
+      // Get all prescriptions to start with
       List<Prescription> prescriptions = prescriptionService.getAllPrescriptions();
       
-      // Define filter configurations for each field
+      // Define filter configurations for each field, with appropriate conversions
       Map<String, Function<Prescription, String>> filterMappings =
           Map.ofEntries(
               Map.entry("prescriptionId", Prescription::getPrescriptionId),
@@ -239,15 +313,23 @@ public class PrescriptionPanel extends BasePanel<Prescription> {
               Map.entry("duration", p -> String.valueOf(p.getDuration())),
               Map.entry("comment", Prescription::getComment));
 
-      // Apply standard filters
+      // Apply standard filters using the helper method from BasePanel
       FilterResult<Prescription> result = applyStandardFilters(prescriptions, formData, filterMappings);
 
+      // Update the table with the filtered results
       populateTable(result.getResults());
     } catch (Exception ex) {
       showError("Error filtering prescriptions", ex);
     }
   }
 
+  /**
+   * {@inheritDoc}
+   * Deletes a prescription from the system.
+   * 
+   * @param prescription The prescription to delete
+   * @throws Exception If deletion fails
+   */
   @Override
   protected void deleteItem(Prescription prescription) throws Exception {
     prescriptionService.deletePrescription(prescription.getPrescriptionId());
