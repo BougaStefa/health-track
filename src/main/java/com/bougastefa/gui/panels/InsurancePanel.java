@@ -5,6 +5,8 @@ import com.bougastefa.gui.components.FilterResult;
 import com.bougastefa.gui.components.FormDialog;
 import com.bougastefa.models.Insurance;
 import com.bougastefa.services.InsuranceService;
+import com.bougastefa.utils.FieldLengthConstants;
+
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -136,66 +138,103 @@ public class InsurancePanel extends BasePanel<Insurance> {
             getParentFrame(),
             existingInsurance == null ? "Add Insurance" : "Edit Insurance");
 
-    // Add form fields with initial values if editing
-    String idValue = existingInsurance != null ? existingInsurance.getInsuranceId() : "";
-    String companyValue = existingInsurance != null ? existingInsurance.getCompany() : "";
-    String addressValue = existingInsurance != null ? existingInsurance.getAddress() : "";
-    String phoneValue = existingInsurance != null ? existingInsurance.getPhone() : "";
-
-    // Add text fields for all insurance properties
-    builder.addTextField("Insurance ID", "insuranceId", idValue);
-    builder.addTextField("Company", "company", companyValue);
-    builder.addTextField("Address", "address", addressValue);
-    builder.addTextField("Phone", "phone", phoneValue);
+    // Add form fields with initial values if editing and display max length info
+    builder.addTextField(
+        "Insurance ID (max " + FieldLengthConstants.INSURANCE_ID_MAX_LENGTH + " chars)",
+        "insuranceId", 
+        existingInsurance != null ? existingInsurance.getInsuranceId() : "");
+        
+    builder.addTextField(
+        "Company Name (max " + FieldLengthConstants.INSURANCE_COMPANY_NAME_MAX_LENGTH + " chars)",
+        "companyName", 
+        existingInsurance != null ? existingInsurance.getCompany() : "");
+        
+    builder.addTextField(
+        "Address (max " + FieldLengthConstants.INSURANCE_ADDRESS_MAX_LENGTH + " chars)",
+        "address", 
+        existingInsurance != null ? existingInsurance.getAddress() : "");
+        
+    builder.addTextField(
+        "Phone (max " + FieldLengthConstants.INSURANCE_PHONE_MAX_LENGTH + " chars)",
+        "phone", 
+        existingInsurance != null ? existingInsurance.getPhone() : "");
 
     // Define save action that will be called when form is submitted
     builder.onSave(
         formData -> {
-          try {
-            // Extract form data from the submitted form
-            String id = (String) formData.get("insuranceId");
-            String company = (String) formData.get("company");
-            String address = (String) formData.get("address");
-            String phone = (String) formData.get("phone");
+            try {
+                // Extract form data from the submitted form
+                String insuranceId = (String) formData.get("insuranceId");
+                String companyName = (String) formData.get("companyName");
+                String address = (String) formData.get("address");
+                String phone = (String) formData.get("phone");
 
-            // Validate insurance ID
-            if (id.isEmpty()) {
-              showError("Insurance ID cannot be empty", null);
-              return;
+                // Validate required fields
+                if (insuranceId.isEmpty()){
+                    showError("Insurance ID is a required field.", null);
+                    return;
+                }
+                
+                // Validate field lengths
+                if (insuranceId.length() > FieldLengthConstants.INSURANCE_ID_MAX_LENGTH) {
+                    showError("Insurance ID exceeds maximum length of " + 
+                        FieldLengthConstants.INSURANCE_ID_MAX_LENGTH + " characters", null);
+                    return;
+                }
+                
+                if (companyName.length() > FieldLengthConstants.INSURANCE_COMPANY_NAME_MAX_LENGTH) {
+                    showError("Company name exceeds maximum length of " + 
+                        FieldLengthConstants.INSURANCE_COMPANY_NAME_MAX_LENGTH + " characters", null);
+                    return;
+                }
+                
+                if (address != null && address.length() > FieldLengthConstants.INSURANCE_ADDRESS_MAX_LENGTH) {
+                    showError("Address exceeds maximum length of " + 
+                        FieldLengthConstants.INSURANCE_ADDRESS_MAX_LENGTH + " characters", null);
+                    return;
+                }
+                
+                if (phone != null && phone.length() > FieldLengthConstants.INSURANCE_PHONE_MAX_LENGTH) {
+                    showError("Phone exceeds maximum length of " + 
+                        FieldLengthConstants.INSURANCE_PHONE_MAX_LENGTH + " characters", null);
+                    return;
+                }
+
+                // Create insurance object
+                Insurance insurance = new Insurance(insuranceId, companyName, address,  phone);
+
+                // Add or update insurance based on whether we're editing or creating
+                if (existingInsurance == null) {
+                    insuranceService.addInsurance(insurance);
+                    showInfo("Insurance added successfully");
+                } else {
+                    insuranceService.updateInsurance(insurance);
+                    showInfo("Insurance updated successfully");
+                }
+                
+                // Refresh display to show changes
+                loadData();
+                
+            } catch (IllegalArgumentException e) {
+                showError(e.getMessage(), null);
+            } catch (Exception ex) {
+                showError("Error: " + ex.getMessage(), ex);
             }
-
-            // Create insurance object with the form data
-            Insurance insurance = new Insurance(id, company, address, phone);
-
-            // Add or update insurance based on whether we're editing or creating
-            if (existingInsurance == null) {
-              insuranceService.addInsurance(insurance);
-              showInfo("Insurance added successfully");
-            } else {
-              insuranceService.updateInsurance(insurance);
-              showInfo("Insurance updated successfully");
-            }
-
-            // Refresh display to show changes
-            loadData();
-          } catch (Exception ex) {
-            showError("Error", ex);
-          }
         });
 
     // Create and show the dialog
     FormDialog dialog = builder.build();
 
-    // Disable ID field if editing (since ID is the primary key and shouldn't change)
+    // Disable ID field if editing
     if (existingInsurance != null) {
-      JComponent idField = dialog.getField("insuranceId");
-      if (idField instanceof JTextField) {
-        ((JTextField) idField).setEditable(false);
-      }
+        JComponent idField = dialog.getField("insuranceId");
+        if (idField instanceof JTextField) {
+            ((JTextField) idField).setEditable(false);
+        }
     }
 
     dialog.setVisible(true);
-  }
+}
 
   /**
    * {@inheritDoc}

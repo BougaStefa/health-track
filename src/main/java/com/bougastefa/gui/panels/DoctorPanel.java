@@ -6,6 +6,8 @@ import com.bougastefa.gui.components.FormDialog;
 import com.bougastefa.models.Doctor;
 import com.bougastefa.models.Specialist;
 import com.bougastefa.services.DoctorService;
+import com.bougastefa.utils.FieldLengthConstants;
+
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -143,104 +145,176 @@ public class DoctorPanel extends BasePanel<Doctor> {
    * @param existingDoctor The doctor to edit, or null if creating a new doctor
    */
   private void showDoctorDialog(Doctor existingDoctor) {
-    // Create FormDialog.Builder
+    // Create FormDialog.Builder with appropriate title based on operation type
     FormDialog.Builder builder =
         new FormDialog.Builder(
             getParentFrame(),
             existingDoctor == null ? "Add Doctor" : "Edit Doctor");
 
-    // Add form fields with initial values if editing
-    String idValue = existingDoctor != null ? existingDoctor.getDoctorId() : "";
-    String firstNameValue = existingDoctor != null ? existingDoctor.getFirstName() : "";
-    String surnameValue = existingDoctor != null ? existingDoctor.getSurname() : "";
-    String addressValue = existingDoctor != null ? existingDoctor.getAddress() : "";
-    String emailValue = existingDoctor != null ? existingDoctor.getEmail() : "";
-    String hospitalValue = existingDoctor != null ? existingDoctor.getHospital() : "";
-    
-    // Check if this doctor is a specialist and get its specialization if it is
+    // Determine if this doctor is a specialist for initial checkbox state and specialization value
     boolean isSpecialist = existingDoctor instanceof Specialist;
     String specializationValue = isSpecialist ? ((Specialist) existingDoctor).getSpecialization() : "";
 
-    // Add all form fields to the dialog
-    builder.addTextField("Doctor ID", "doctorId", idValue);
-    builder.addTextField("First Name", "firstName", firstNameValue);
-    builder.addTextField("Surname", "surname", surnameValue);
-    builder.addTextField("Address", "address", addressValue);
-    builder.addTextField("Email", "email", emailValue);
-    builder.addTextField("Hospital", "hospital", hospitalValue);
+    // Add form fields with initial values if editing and display max length info
+    builder.addTextField(
+        "Doctor ID (max " + FieldLengthConstants.DOCTOR_ID_MAX_LENGTH + " chars)",
+        "doctorId", 
+        existingDoctor != null ? existingDoctor.getDoctorId() : "");
+        
+    builder.addTextField(
+        "First Name (max " + FieldLengthConstants.DOCTOR_FIRSTNAME_MAX_LENGTH + " chars)",
+        "firstName", 
+        existingDoctor != null ? existingDoctor.getFirstName() : "");
+        
+    builder.addTextField(
+        "Surname (max " + FieldLengthConstants.DOCTOR_SURNAME_MAX_LENGTH + " chars)",
+        "surname", 
+        existingDoctor != null ? existingDoctor.getSurname() : "");
+        
+    builder.addTextField(
+        "Address (max " + FieldLengthConstants.DOCTOR_ADDRESS_MAX_LENGTH + " chars)",
+        "address", 
+        existingDoctor != null ? existingDoctor.getAddress() : "");
+        
+    builder.addTextField(
+        "Email (max " + FieldLengthConstants.DOCTOR_EMAIL_MAX_LENGTH + " chars)",
+        "email", 
+        existingDoctor != null ? existingDoctor.getEmail() : "");
+        
+    builder.addTextField(
+        "Hospital (max " + FieldLengthConstants.DOCTOR_HOSPITAL_MAX_LENGTH + " chars)",
+        "hospital", 
+        existingDoctor != null ? existingDoctor.getHospital() : "");
+        
     builder.addCheckBox("Is Specialist", "isSpecialist", isSpecialist);
-    builder.addTextField("Specialization", "specialization", specializationValue);
+    
+    builder.addTextField(
+        "Specialization (max " + FieldLengthConstants.SPECIALIZATION_MAX_LENGTH + " chars)",
+        "specialization", 
+        specializationValue);
 
-    // Define save action
+    // Define save action that will be called when form is submitted
     builder.onSave(
         formData -> {
-          try {
-            // Extract form data
-            String doctorId = (String) formData.get("doctorId");
-            String firstName = (String) formData.get("firstName");
-            String surname = (String) formData.get("surname");
-            String address = (String) formData.get("address");
-            String email = (String) formData.get("email");
-            String hospital = (String) formData.get("hospital");
-            boolean isSpecialistSelected = (Boolean) formData.get("isSpecialist");
-            String specialization = (String) formData.get("specialization");
+            try {
+                // Extract form data from the submitted form
+                String doctorId = (String) formData.get("doctorId");
+                String firstName = (String) formData.get("firstName");
+                String surname = (String) formData.get("surname");
+                String address = (String) formData.get("address");
+                String email = (String) formData.get("email");
+                String hospital = (String) formData.get("hospital");
+                boolean isSpecialistSelected = (Boolean) formData.get("isSpecialist");
+                String specialization = (String) formData.get("specialization");
 
-            // Validate doctor ID
-            if (doctorId.isEmpty()) {
-              showError("Doctor ID cannot be empty", null);
-              return;
-            }
+                // Validate required fields
+                if (doctorId.isEmpty()){
+                    showError("Doctor ID is a required field", null);
+                    return;
+                }
+                
+                // Validate field lengths
+                if (doctorId.length() > FieldLengthConstants.DOCTOR_ID_MAX_LENGTH) {
+                    showError("Doctor ID exceeds maximum length of " + 
+                        FieldLengthConstants.DOCTOR_ID_MAX_LENGTH + " characters", null);
+                    return;
+                }
+                
+                if (firstName.length() > FieldLengthConstants.DOCTOR_FIRSTNAME_MAX_LENGTH) {
+                    showError("First name exceeds maximum length of " + 
+                        FieldLengthConstants.DOCTOR_FIRSTNAME_MAX_LENGTH + " characters", null);
+                    return;
+                }
+                
+                if (surname.length() > FieldLengthConstants.DOCTOR_SURNAME_MAX_LENGTH) {
+                    showError("Surname exceeds maximum length of " + 
+                        FieldLengthConstants.DOCTOR_SURNAME_MAX_LENGTH + " characters", null);
+                    return;
+                }
+                
+                if (address != null && address.length() > FieldLengthConstants.DOCTOR_ADDRESS_MAX_LENGTH) {
+                    showError("Address exceeds maximum length of " + 
+                        FieldLengthConstants.DOCTOR_ADDRESS_MAX_LENGTH + " characters", null);
+                    return;
+                }
+                
+                if (email != null && email.length() > FieldLengthConstants.DOCTOR_EMAIL_MAX_LENGTH) {
+                    showError("Email exceeds maximum length of " + 
+                        FieldLengthConstants.DOCTOR_EMAIL_MAX_LENGTH + " characters", null);
+                    return;
+                }
+                
+                if (hospital != null && hospital.length() > FieldLengthConstants.DOCTOR_HOSPITAL_MAX_LENGTH) {
+                    showError("Hospital exceeds maximum length of " + 
+                        FieldLengthConstants.DOCTOR_HOSPITAL_MAX_LENGTH + " characters", null);
+                    return;
+                }
+                
+                // For specialists, validate specialization field
+                if (isSpecialistSelected) {
+                    // For specialist doctors, validate specialization field
+                    if (specialization.isEmpty()) {
+                        showError("Specialization cannot be empty for specialists", null);
+                        return;
+                    }
+                    
+                    if (specialization.length() > FieldLengthConstants.SPECIALIZATION_MAX_LENGTH) {
+                        showError("Specialization exceeds maximum length of " + 
+                            FieldLengthConstants.SPECIALIZATION_MAX_LENGTH + " characters", null);
+                        return;
+                    }
+                }
 
-            // Create doctor object based on whether it's a specialist
-            Doctor doctor;
-            if (isSpecialistSelected) {
-              if (specialization.isEmpty()) {
-                showError("Specialization cannot be empty for specialists", null);
-                return;
-              }
-              doctor = new Specialist(doctorId, firstName, surname, address, email, hospital, specialization);
-            } else {
-              doctor = new Doctor(doctorId, firstName, surname, address, email, hospital);
-            }
+                // Create appropriate doctor object based on specialization status
+                Doctor doctor;
+                if (isSpecialistSelected) {
+                    doctor = new Specialist(doctorId, firstName, surname, address, email, hospital, specialization);
+                } else {
+                    doctor = new Doctor(doctorId, firstName, surname, address, email, hospital);
+                }
 
-            // Add or update doctor based on whether we're editing or creating
-            if (existingDoctor == null) {
-              doctorService.addDoctor(doctor);
-              showInfo("Doctor added successfully");
-            } else {
-              doctorService.updateDoctor(doctor);
-              showInfo("Doctor updated successfully");
+                // Add or update doctor based on whether we're editing or creating
+                if (existingDoctor == null) {
+                    doctorService.addDoctor(doctor);
+                    showInfo("Doctor added successfully");
+                } else {
+                    doctorService.updateDoctor(doctor);
+                    showInfo("Doctor updated successfully");
+                }
+                
+                // Refresh display to show changes
+                loadData();
+                
+            } catch (IllegalArgumentException e) {
+                showError(e.getMessage(), null);
+            } catch (Exception ex) {
+                showError("Error: " + ex.getMessage(), ex);
             }
-            loadData(); // Refresh table after operation
-          } catch (Exception ex) {
-            showError("Error", ex);
-          }
         });
 
     // Create and show the dialog
     FormDialog dialog = builder.build();
 
-    // Disable ID field if editing (since ID is the primary key and shouldn't change)
+    // Disable ID field if editing
     if (existingDoctor != null) {
-      JComponent idField = dialog.getField("doctorId");
-      if (idField instanceof JTextField) {
-        ((JTextField) idField).setEditable(false);
-      }
+        JComponent idField = dialog.getField("doctorId");
+        if (idField instanceof JTextField) {
+            ((JTextField) idField).setEditable(false);
+        }
     }
 
     // Add listener to enable/disable specialization field based on checkbox
     JCheckBox specialistCheckbox = (JCheckBox) dialog.getField("isSpecialist");
     JTextField specializationField = (JTextField) dialog.getField("specialization");
-    
-    // Initial state - specialization field enabled only if checkbox is selected
+
+    // Set initial enabled state based on checkbox
     specializationField.setEnabled(specialistCheckbox.isSelected());
-    // Dynamic state - enable/disable field whenever checkbox state changes
-    specialistCheckbox.addActionListener(e -> 
-        specializationField.setEnabled(specialistCheckbox.isSelected()));
+    // Add listener to update enabled state whenever checkbox changes
+    specialistCheckbox.addActionListener(
+        e -> specializationField.setEnabled(specialistCheckbox.isSelected()));
 
     dialog.setVisible(true);
-  }
-
+}
   /**
    * {@inheritDoc}
    * Shows a dialog for advanced filtering of doctors.

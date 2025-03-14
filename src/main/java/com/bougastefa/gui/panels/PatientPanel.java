@@ -10,50 +10,49 @@ import com.bougastefa.models.Specialist;
 import com.bougastefa.services.DoctorService;
 import com.bougastefa.services.PatientService;
 import com.bougastefa.services.VisitService;
+import com.bougastefa.utils.FieldLengthConstants;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import javax.swing.*;
 
 /**
- * Panel for managing Patient entities in the application.
- * This panel extends BasePanel to provide specialized functionality for patient management,
- * including adding, editing, deleting, and filtering patients. It handles both regular
- * Patient objects and InsuredPatient subclasses, with special UI components for
- * insurance-related fields. Additionally, it provides functionality to display
- * information about a patient's primary doctor (the doctor they have visited most often).
+ * Panel for managing Patient entities in the application. This panel extends BasePanel to provide
+ * specialized functionality for patient management, including adding, editing, deleting, and
+ * filtering patients. It handles both regular Patient objects and InsuredPatient subclasses, with
+ * special UI components for insurance-related fields. Additionally, it provides functionality to
+ * display information about a patient's primary doctor (the doctor they have visited most often).
  */
 public class PatientPanel extends BasePanel<Patient> {
   /** Service object that handles business logic and data operations for patients */
   private final PatientService patientService;
-  
+
   /** Service object used for retrieving doctor information */
   private final DoctorService doctorService;
-  
+
   /** Service object used to determine a patient's primary doctor based on visit history */
   private final VisitService visitService;
 
   /**
-   * Constructs a new PatientPanel.
-   * Initializes the panel with the "Patient" title, sets up the required services,
-   * adds a custom button for viewing the patient's primary doctor details,
-   * and loads initial patient data.
+   * Constructs a new PatientPanel. Initializes the panel with the "Patient" title, sets up the
+   * required services, adds a custom button for viewing the patient's primary doctor details, and
+   * loads initial patient data.
    */
   public PatientPanel() {
     super("Patient");
     patientService = new PatientService();
     doctorService = new DoctorService();
     visitService = new VisitService();
-    
+
     // Add custom button for Primary Doctor functionality
     addCustomButton("Primary Doctor", e -> showPrimaryDoctorDetails());
-    
+
     loadData();
   }
 
   /**
-   * {@inheritDoc}
-   * Defines the column names for the patient table, including a special column for insurance ID.
+   * {@inheritDoc} Defines the column names for the patient table, including a special column for
+   * insurance ID.
    */
   @Override
   protected String[] getColumnNames() {
@@ -63,8 +62,7 @@ public class PatientPanel extends BasePanel<Patient> {
   }
 
   /**
-   * {@inheritDoc}
-   * Loads all patients from the service and populates the table with the data.
+   * {@inheritDoc} Loads all patients from the service and populates the table with the data.
    * Handles any exceptions that may occur during the data loading process.
    */
   @Override
@@ -78,10 +76,9 @@ public class PatientPanel extends BasePanel<Patient> {
   }
 
   /**
-   * Populates the table with patient data.
-   * Handles both regular Patient and InsuredPatient objects, showing the insurance ID
-   * for insured patients and an empty string for regular patients.
-   * 
+   * Populates the table with patient data. Handles both regular Patient and InsuredPatient objects,
+   * showing the insurance ID for insured patients and an empty string for regular patients.
+   *
    * @param patients The list of patients to display in the table
    */
   private void populateTable(List<Patient> patients) {
@@ -107,10 +104,9 @@ public class PatientPanel extends BasePanel<Patient> {
   }
 
   /**
-   * {@inheritDoc}
-   * Retrieves the currently selected patient from the table.
-   * Maps the selected row to a Patient object by using the patientId to look up the full object.
-   * 
+   * {@inheritDoc} Retrieves the currently selected patient from the table. Maps the selected row to
+   * a Patient object by using the patientId to look up the full object.
+   *
    * @return The selected Patient object, or null if no row is selected or an error occurs
    */
   @Override
@@ -134,9 +130,8 @@ public class PatientPanel extends BasePanel<Patient> {
   }
 
   /**
-   * {@inheritDoc}
-   * Shows a dialog for adding a new patient.
-   * Calls showPatientDialog with null to indicate a new patient is being created.
+   * {@inheritDoc} Shows a dialog for adding a new patient. Calls showPatientDialog with null to
+   * indicate a new patient is being created.
    */
   @Override
   protected void showAddDialog() {
@@ -144,10 +139,9 @@ public class PatientPanel extends BasePanel<Patient> {
   }
 
   /**
-   * {@inheritDoc}
-   * Shows a dialog for editing an existing patient.
-   * Calls showPatientDialog with the patient object to pre-populate the form.
-   * 
+   * {@inheritDoc} Shows a dialog for editing an existing patient. Calls showPatientDialog with the
+   * patient object to pre-populate the form.
+   *
    * @param patient The patient to edit
    */
   @Override
@@ -156,43 +150,63 @@ public class PatientPanel extends BasePanel<Patient> {
   }
 
   /**
-   * Creates and displays a form dialog for adding or editing a patient.
-   * Sets up the form with fields for all patient properties, including conditional
-   * insurance-related fields for insured patients. The dialog dynamically enables
-   * or disables the insurance ID field based on the "Is Insured" checkbox.
-   * 
+   * Creates and displays a form dialog for adding or editing a patient. Sets up the form with
+   * fields for all patient properties, including conditional insurance-related fields for insured
+   * patients. The dialog dynamically enables or disables the insurance ID field based on the "Is
+   * Insured" checkbox.
+   *
    * @param existingPatient The patient to edit, or null if creating a new patient
    */
   private void showPatientDialog(Patient existingPatient) {
     // Create FormDialog.Builder with appropriate title based on operation type
     FormDialog.Builder builder =
         new FormDialog.Builder(
-            getParentFrame(),
-            existingPatient == null ? "Add Patient" : "Edit Patient");
+            getParentFrame(), existingPatient == null ? "Add Patient" : "Edit Patient");
+    // Add form fields with initial values if editing and display max length info
+    builder.addTextField(
+        "Patient ID (max " + FieldLengthConstants.PATIENT_ID_MAX_LENGTH + " chars)",
+        "patientId",
+        existingPatient != null ? existingPatient.getPatientId() : "");
 
-    // Add form fields with initial values if editing
-    String idValue = existingPatient != null ? existingPatient.getPatientId() : "";
-    String firstNameValue = existingPatient != null ? existingPatient.getFirstName() : "";
-    String surnameValue = existingPatient != null ? existingPatient.getSurname() : "";
-    String postcodeValue = existingPatient != null ? existingPatient.getPostcode() : "";
-    String addressValue = existingPatient != null ? existingPatient.getAddress() : "";
-    String phoneValue = existingPatient != null ? existingPatient.getPhone() : "";
-    String emailValue = existingPatient != null ? existingPatient.getEmail() : "";
+    builder.addTextField(
+        "First Name (max " + FieldLengthConstants.PATIENT_FIRSTNAME_MAX_LENGTH + " chars)",
+        "firstName",
+        existingPatient != null ? existingPatient.getFirstName() : "");
+
+    builder.addTextField(
+        "Surname (max " + FieldLengthConstants.PATIENT_SURNAME_MAX_LENGTH + " chars)",
+        "surname",
+        existingPatient != null ? existingPatient.getSurname() : "");
+
+    builder.addTextField(
+        "Postcode (max " + FieldLengthConstants.PATIENT_POSTCODE_MAX_LENGTH + " chars)",
+        "postcode",
+        existingPatient != null ? existingPatient.getPostcode() : "");
+
+    builder.addTextField(
+        "Address (max " + FieldLengthConstants.PATIENT_ADDRESS_MAX_LENGTH + " chars)",
+        "address",
+        existingPatient != null ? existingPatient.getAddress() : "");
+
+    builder.addTextField(
+        "Email (max " + FieldLengthConstants.PATIENT_EMAIL_MAX_LENGTH + " chars)",
+        "email",
+        existingPatient != null ? existingPatient.getEmail() : "");
+
+    builder.addTextField(
+        "Phone (max " + FieldLengthConstants.PATIENT_PHONE_MAX_LENGTH + " chars)",
+        "phone",
+        existingPatient != null ? existingPatient.getPhone() : "");
 
     // Determine if this patient is insured for initial checkbox state and insurance ID value
     boolean isInsured = existingPatient instanceof InsuredPatient;
     String insuranceIdValue = isInsured ? ((InsuredPatient) existingPatient).getInsuranceId() : "";
 
-    // Add all form fields to the dialog
-    builder.addTextField("Patient ID", "patientId", idValue);
-    builder.addTextField("First Name", "firstName", firstNameValue);
-    builder.addTextField("Surname", "surname", surnameValue);
-    builder.addTextField("Postcode", "postcode", postcodeValue);
-    builder.addTextField("Address", "address", addressValue);
-    builder.addTextField("Phone", "phone", phoneValue);
-    builder.addTextField("Email", "email", emailValue);
     builder.addCheckBox("Is Insured", "isInsured", isInsured);
-    builder.addTextField("Insurance ID", "insuranceId", insuranceIdValue);
+    builder.addTextField(
+        "Insurance ID (max " + FieldLengthConstants.INSURANCE_ID_MAX_LENGTH + " chars)",
+        "insuranceId",
+        insuranceIdValue);
 
     // Define save action that will be called when form is submitted
     builder.onSave(
@@ -209,9 +223,75 @@ public class PatientPanel extends BasePanel<Patient> {
             boolean isInsuredSelected = (Boolean) formData.get("isInsured");
             String insuranceId = (String) formData.get("insuranceId");
 
-            // Validate patient ID
+            // Validate required fields
             if (patientId.isEmpty()) {
-              showError("Patient ID cannot be empty", null);
+              showError("Patient ID is a required field", null);
+              return;
+            }
+
+            // Validate field lengths
+            if (patientId.length() > FieldLengthConstants.PATIENT_ID_MAX_LENGTH) {
+              showError(
+                  "Patient ID exceeds maximum length of "
+                      + FieldLengthConstants.PATIENT_ID_MAX_LENGTH
+                      + " characters",
+                  null);
+              return;
+            }
+
+            if (firstName.length() > FieldLengthConstants.PATIENT_FIRSTNAME_MAX_LENGTH) {
+              showError(
+                  "First name exceeds maximum length of "
+                      + FieldLengthConstants.PATIENT_FIRSTNAME_MAX_LENGTH
+                      + " characters",
+                  null);
+              return;
+            }
+
+            if (surname.length() > FieldLengthConstants.PATIENT_SURNAME_MAX_LENGTH) {
+              showError(
+                  "Surname exceeds maximum length of "
+                      + FieldLengthConstants.PATIENT_SURNAME_MAX_LENGTH
+                      + " characters",
+                  null);
+              return;
+            }
+
+            if (postcode != null
+                && postcode.length() > FieldLengthConstants.PATIENT_POSTCODE_MAX_LENGTH) {
+              showError(
+                  "Postcode exceeds maximum length of "
+                      + FieldLengthConstants.PATIENT_POSTCODE_MAX_LENGTH
+                      + " characters",
+                  null);
+              return;
+            }
+
+            if (address != null
+                && address.length() > FieldLengthConstants.PATIENT_ADDRESS_MAX_LENGTH) {
+              showError(
+                  "Address exceeds maximum length of "
+                      + FieldLengthConstants.PATIENT_ADDRESS_MAX_LENGTH
+                      + " characters",
+                  null);
+              return;
+            }
+
+            if (phone != null && phone.length() > FieldLengthConstants.PATIENT_PHONE_MAX_LENGTH) {
+              showError(
+                  "Phone exceeds maximum length of "
+                      + FieldLengthConstants.PATIENT_PHONE_MAX_LENGTH
+                      + " characters",
+                  null);
+              return;
+            }
+
+            if (email != null && email.length() > FieldLengthConstants.PATIENT_EMAIL_MAX_LENGTH) {
+              showError(
+                  "Email exceeds maximum length of "
+                      + FieldLengthConstants.PATIENT_EMAIL_MAX_LENGTH
+                      + " characters",
+                  null);
               return;
             }
 
@@ -223,6 +303,16 @@ public class PatientPanel extends BasePanel<Patient> {
                 showError("Insurance ID cannot be empty for insured patients", null);
                 return;
               }
+
+              if (insuranceId.length() > FieldLengthConstants.INSURANCE_ID_MAX_LENGTH) {
+                showError(
+                    "Insurance ID exceeds maximum length of "
+                        + FieldLengthConstants.INSURANCE_ID_MAX_LENGTH
+                        + " characters",
+                    null);
+                return;
+              }
+
               patient =
                   new InsuredPatient(
                       patientId, firstName, surname, postcode, address, phone, email, insuranceId);
@@ -239,18 +329,21 @@ public class PatientPanel extends BasePanel<Patient> {
               patientService.updatePatient(patient);
               showInfo("Patient updated successfully");
             }
-            
+
             // Refresh display to show changes
             loadData();
+
+          } catch (IllegalArgumentException e) {
+            showError(e.getMessage(), null);
           } catch (Exception ex) {
-            showError("Error", ex);
+            showError("Error: " + ex.getMessage(), ex);
           }
         });
 
     // Create and show the dialog
     FormDialog dialog = builder.build();
 
-    // Disable ID field if editing (since ID is the primary key and shouldn't change)
+    // Disable ID field if editing
     if (existingPatient != null) {
       JComponent idField = dialog.getField("patientId");
       if (idField instanceof JTextField) {
@@ -272,10 +365,9 @@ public class PatientPanel extends BasePanel<Patient> {
   }
 
   /**
-   * Shows a dialog with details about the selected patient's primary doctor.
-   * The primary doctor is defined as the doctor the patient has visited most frequently.
-   * If the patient has no visits, or if the doctor information cannot be found,
-   * appropriate error messages are displayed.
+   * Shows a dialog with details about the selected patient's primary doctor. The primary doctor is
+   * defined as the doctor the patient has visited most frequently. If the patient has no visits, or
+   * if the doctor information cannot be found, appropriate error messages are displayed.
    */
   private void showPrimaryDoctorDetails() {
     // Get the currently selected patient
@@ -299,8 +391,7 @@ public class PatientPanel extends BasePanel<Patient> {
     }
 
     // Create and show the doctor details dialog
-    FormDialog.Builder builder =
-        new FormDialog.Builder(getParentFrame(), "Primary Doctor Details");
+    FormDialog.Builder builder = new FormDialog.Builder(getParentFrame(), "Primary Doctor Details");
 
     // Add read-only fields for doctor details
     builder.addTextField("Doctor ID", "doctorId", primaryDoctor.getDoctorId());
@@ -322,32 +413,38 @@ public class PatientPanel extends BasePanel<Patient> {
     FormDialog dialog = builder.build();
 
     // Make all fields read-only since this is just a view
-    setupReadOnlyDialog(dialog, 
-        "doctorId", "firstName", "surname", "address", "email", "hospital", "specialization");
+    setupReadOnlyDialog(
+        dialog,
+        "doctorId",
+        "firstName",
+        "surname",
+        "address",
+        "email",
+        "hospital",
+        "specialization");
 
     dialog.setVisible(true);
   }
 
   /**
-   * {@inheritDoc}
-   * Shows a dialog for advanced filtering of patients.
-   * Creates a filter form with fields corresponding to all patient properties,
-   * including the insurance ID field for filtering insured patients.
+   * {@inheritDoc} Shows a dialog for advanced filtering of patients. Creates a filter form with
+   * fields corresponding to all patient properties, including the insurance ID field for filtering
+   * insured patients.
    */
   @Override
   protected void showAdvancedFilterDialog() {
     // Create filter dialog with the relevant fields
-    FormDialog.Builder builder = createFilterDialog(
-        "Advanced Filter",
-        "patientId",
-        "firstName",
-        "surname",
-        "postcode",
-        "address",
-        "phone",
-        "email",
-        "insuranceId"
-    );
+    FormDialog.Builder builder =
+        createFilterDialog(
+            "Advanced Filter",
+            "patientId",
+            "firstName",
+            "surname",
+            "postcode",
+            "address",
+            "phone",
+            "email",
+            "insuranceId");
 
     // Define filter action to be called when filter is applied
     builder.onSave(this::applyFilters);
@@ -360,11 +457,10 @@ public class PatientPanel extends BasePanel<Patient> {
   }
 
   /**
-   * {@inheritDoc}
-   * Applies filter criteria to the list of patients and updates the table.
-   * Uses the FilterResult helper class for standard fields, with special handling
-   * for the insuranceId field which requires type checking to identify InsuredPatient objects.
-   * 
+   * {@inheritDoc} Applies filter criteria to the list of patients and updates the table. Uses the
+   * FilterResult helper class for standard fields, with special handling for the insuranceId field
+   * which requires type checking to identify InsuredPatient objects.
+   *
    * @param formData Map of field names to filter values from the filter dialog
    */
   @Override
@@ -372,7 +468,7 @@ public class PatientPanel extends BasePanel<Patient> {
     try {
       // Get all patients to start with
       List<Patient> patients = patientService.getAllPatients();
-      
+
       // Define filter configurations for standard fields
       Map<String, Function<Patient, String>> filterMappings =
           Map.of(
@@ -414,11 +510,10 @@ public class PatientPanel extends BasePanel<Patient> {
   }
 
   /**
-   * {@inheritDoc}
-   * Deletes a patient from the system.
-   * Note: This operation may fail if there are visits or prescriptions associated with this patient,
-   * as there will be foreign key constraints in the database.
-   * 
+   * {@inheritDoc} Deletes a patient from the system. Note: This operation may fail if there are
+   * visits or prescriptions associated with this patient, as there will be foreign key constraints
+   * in the database.
+   *
    * @param patient The patient to delete
    * @throws Exception If deletion fails
    */
