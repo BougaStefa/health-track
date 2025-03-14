@@ -2,6 +2,8 @@ package com.bougastefa.services;
 
 import com.bougastefa.database.DrugDAO;
 import com.bougastefa.models.Drug;
+import com.bougastefa.utils.FieldLengthConstants;
+
 import java.sql.SQLException;
 import java.util.List;
 import org.slf4j.Logger;
@@ -17,6 +19,41 @@ import org.slf4j.LoggerFactory;
 public class DrugService {
   private DrugDAO drugDAO = new DrugDAO();
   private static final Logger logger = LoggerFactory.getLogger(DrugService.class);
+/**
+ * Validates that the drug fields don't exceed database column length limits.
+ *
+ * @param drug The drug to validate
+ * @throws IllegalArgumentException If any field exceeds its maximum length
+ */
+private void validateFieldLengths(Drug drug) {
+    if (drug.getDrugId() != null && 
+        drug.getDrugId().length() > FieldLengthConstants.DRUG_ID_MAX_LENGTH) {
+        throw new IllegalArgumentException(
+            "Drug ID exceeds maximum length of " + 
+            FieldLengthConstants.DRUG_ID_MAX_LENGTH + " characters");
+    }
+    
+    if (drug.getName() != null && 
+        drug.getName().length() > FieldLengthConstants.DRUG_NAME_MAX_LENGTH) {
+        throw new IllegalArgumentException(
+            "Drug name exceeds maximum length of " + 
+            FieldLengthConstants.DRUG_NAME_MAX_LENGTH + " characters");
+    }
+    
+    if (drug.getBenefits() != null && 
+        drug.getBenefits().length() > FieldLengthConstants.DRUG_BENEFITS_MAX_LENGTH) {
+        throw new IllegalArgumentException(
+            "Benefits exceed maximum length of " + 
+            FieldLengthConstants.DRUG_BENEFITS_MAX_LENGTH + " characters");
+    }
+    
+    if (drug.getSideEffects() != null && 
+        drug.getSideEffects().length() > FieldLengthConstants.DRUG_SIDE_EFFECTS_MAX_LENGTH) {
+        throw new IllegalArgumentException(
+            "Side effects exceed maximum length of " + 
+            FieldLengthConstants.DRUG_SIDE_EFFECTS_MAX_LENGTH + " characters");
+    }
+}
 
   /**
    * Adds a new drug to the system after performing validation checks.
@@ -31,6 +68,9 @@ public class DrugService {
     if (drug == null) {
       throw new IllegalArgumentException("Drug cannot be null");
     }
+
+    validateFieldLengths(drug);
+
     Drug existingDrug = getDrugById(drug.getDrugId());
     if (existingDrug != null) {
       throw new IllegalArgumentException("Drug ID already exists: " + drug.getDrugId());
@@ -155,6 +195,9 @@ public class DrugService {
     if (drug == null) {
       throw new IllegalArgumentException("Drug cannot be null");
     }
+
+    validateFieldLengths(drug);
+
     try {
       drugDAO.updateDrug(drug);
       logger.info("Drug updated successfully: {}", drug.getDrugId());

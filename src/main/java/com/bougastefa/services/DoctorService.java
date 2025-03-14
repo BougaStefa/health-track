@@ -2,6 +2,9 @@ package com.bougastefa.services;
 
 import com.bougastefa.database.DoctorDAO;
 import com.bougastefa.models.Doctor;
+import com.bougastefa.models.Specialist;
+import com.bougastefa.utils.FieldLengthConstants;
+
 import java.sql.SQLException;
 import java.util.List;
 import org.slf4j.Logger;
@@ -16,6 +19,66 @@ import org.slf4j.LoggerFactory;
 public class DoctorService {
   private DoctorDAO doctorDAO = new DoctorDAO();
   private static final Logger logger = LoggerFactory.getLogger(DoctorService.class);
+/**
+ * Validates that the doctor fields don't exceed database column length limits.
+ *
+ * @param doctor The doctor to validate
+ * @throws IllegalArgumentException If any field exceeds its maximum length
+ */
+private void validateFieldLengths(Doctor doctor) {
+    if (doctor.getDoctorId() != null && 
+        doctor.getDoctorId().length() > FieldLengthConstants.DOCTOR_ID_MAX_LENGTH) {
+        throw new IllegalArgumentException(
+            "Doctor ID exceeds maximum length of " + 
+            FieldLengthConstants.DOCTOR_ID_MAX_LENGTH + " characters");
+    }
+    
+    if (doctor.getFirstName() != null && 
+        doctor.getFirstName().length() > FieldLengthConstants.DOCTOR_FIRSTNAME_MAX_LENGTH) {
+        throw new IllegalArgumentException(
+            "First name exceeds maximum length of " + 
+            FieldLengthConstants.DOCTOR_FIRSTNAME_MAX_LENGTH + " characters");
+    }
+    
+    if (doctor.getSurname() != null && 
+        doctor.getSurname().length() > FieldLengthConstants.DOCTOR_SURNAME_MAX_LENGTH) {
+        throw new IllegalArgumentException(
+            "Surname exceeds maximum length of " + 
+            FieldLengthConstants.DOCTOR_SURNAME_MAX_LENGTH + " characters");
+    }
+    
+    if (doctor.getAddress() != null && 
+        doctor.getAddress().length() > FieldLengthConstants.DOCTOR_ADDRESS_MAX_LENGTH) {
+        throw new IllegalArgumentException(
+            "Address exceeds maximum length of " + 
+            FieldLengthConstants.DOCTOR_ADDRESS_MAX_LENGTH + " characters");
+    }
+    
+    if (doctor.getEmail() != null && 
+        doctor.getEmail().length() > FieldLengthConstants.DOCTOR_EMAIL_MAX_LENGTH) {
+        throw new IllegalArgumentException(
+            "Email exceeds maximum length of " + 
+            FieldLengthConstants.DOCTOR_EMAIL_MAX_LENGTH + " characters");
+    }
+    
+    if (doctor.getHospital() != null && 
+        doctor.getHospital().length() > FieldLengthConstants.DOCTOR_HOSPITAL_MAX_LENGTH) {
+        throw new IllegalArgumentException(
+            "Hospital exceeds maximum length of " + 
+            FieldLengthConstants.DOCTOR_HOSPITAL_MAX_LENGTH + " characters");
+    }
+    
+    // Check specialization if the doctor is a specialist
+    if (doctor instanceof Specialist) {
+        Specialist specialist = (Specialist) doctor;
+        if (specialist.getSpecialization() != null && 
+            specialist.getSpecialization().length() > FieldLengthConstants.SPECIALIZATION_MAX_LENGTH) {
+            throw new IllegalArgumentException(
+                "Specialization exceeds maximum length of " + 
+                FieldLengthConstants.SPECIALIZATION_MAX_LENGTH + " characters");
+        }
+    }
+}
 
   /**
    * Adds a new doctor to the system after performing validation checks.
@@ -29,6 +92,9 @@ public class DoctorService {
     if (doctor == null) {
       throw new IllegalArgumentException("Doctor cannot be null");
     }
+
+    validateFieldLengths(doctor);
+
     Doctor existingDoctor = getDoctorById(doctor.getDoctorId());
     if (existingDoctor != null) {
       throw new IllegalArgumentException("Doctor ID already exists: " + doctor.getDoctorId());
@@ -90,6 +156,9 @@ public class DoctorService {
     if (doctor == null) {
       throw new IllegalArgumentException("Doctor cannot be null");
     }
+
+    validateFieldLengths(doctor);
+
     try {
       doctorDAO.updateDoctor(doctor);
       logger.info("Doctor updated successfully: {}", doctor.getDoctorId());

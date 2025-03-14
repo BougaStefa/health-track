@@ -2,6 +2,7 @@ package com.bougastefa.services;
 
 import com.bougastefa.database.PrescriptionDAO;
 import com.bougastefa.models.Prescription;
+import com.bougastefa.utils.FieldLengthConstants;
 import java.sql.SQLException;
 import java.util.Collections;
 import java.util.List;
@@ -9,31 +10,89 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Service class that manages the business logic for Prescription entities.
- * This class acts as an intermediary between the controller layer and the data access layer,
- * providing validation, error handling, and logging for all prescription-related operations.
- * It ensures data integrity and consistent behavior when interacting with prescription records.
+ * Service class that manages the business logic for Prescription entities. This class acts as an
+ * intermediary between the controller layer and the data access layer, providing validation, error
+ * handling, and logging for all prescription-related operations. It ensures data integrity and
+ * consistent behavior when interacting with prescription records.
  */
 public class PrescriptionService {
   private PrescriptionDAO prescriptionDAO = new PrescriptionDAO();
   private static final Logger logger = LoggerFactory.getLogger(PrescriptionService.class);
 
   /**
-   * Adds a new prescription to the system after performing validation checks.
-   * Validates that the prescription object is not null and that a prescription with 
-   * the same ID doesn't already exist in the database.
+   * Validates that the prescription fields don't exceed database column length limits.
+   *
+   * @param prescription The prescription to validate
+   * @throws IllegalArgumentException If any field exceeds its maximum length
+   */
+  private void validateFieldLengths(Prescription prescription) {
+    if (prescription.getPrescriptionId() != null
+        && prescription.getPrescriptionId().length()
+            > FieldLengthConstants.PRESCRIPTION_ID_MAX_LENGTH) {
+      throw new IllegalArgumentException(
+          "Prescription ID exceeds maximum length of "
+              + FieldLengthConstants.PRESCRIPTION_ID_MAX_LENGTH
+              + " characters");
+    }
+
+    if (prescription.getDrugId() != null
+        && prescription.getDrugId().length()
+            > FieldLengthConstants.PRESCRIPTION_DRUG_ID_MAX_LENGTH) {
+      throw new IllegalArgumentException(
+          "Drug ID exceeds maximum length of "
+              + FieldLengthConstants.PRESCRIPTION_DRUG_ID_MAX_LENGTH
+              + " characters");
+    }
+
+    if (prescription.getDoctorId() != null
+        && prescription.getDoctorId().length()
+            > FieldLengthConstants.PRESCRIPTION_DOCTOR_ID_MAX_LENGTH) {
+      throw new IllegalArgumentException(
+          "Doctor ID exceeds maximum length of "
+              + FieldLengthConstants.PRESCRIPTION_DOCTOR_ID_MAX_LENGTH
+              + " characters");
+    }
+
+    if (prescription.getPatientId() != null
+        && prescription.getPatientId().length()
+            > FieldLengthConstants.PRESCRIPTION_PATIENT_ID_MAX_LENGTH) {
+      throw new IllegalArgumentException(
+          "Patient ID exceeds maximum length of "
+              + FieldLengthConstants.PRESCRIPTION_PATIENT_ID_MAX_LENGTH
+              + " characters");
+    }
+
+    if (prescription.getComment() != null
+        && prescription.getComment().length()
+            > FieldLengthConstants.PRESCRIPTION_COMMENT_MAX_LENGTH) {
+      throw new IllegalArgumentException(
+          "Comment exceeds maximum length of "
+              + FieldLengthConstants.PRESCRIPTION_COMMENT_MAX_LENGTH
+              + " characters");
+    }
+  }
+
+  /**
+   * Adds a new prescription to the system after performing validation checks. Validates that the
+   * prescription object is not null and that a prescription with the same ID doesn't already exist
+   * in the database.
    *
    * @param prescription The Prescription object to be added
-   * @throws IllegalArgumentException If the prescription is null or if a prescription with the same ID already exists
+   * @throws IllegalArgumentException If the prescription is null or if a prescription with the same
+   *     ID already exists
    * @throws ServiceException If a database error occurs while adding the prescription
    */
   public void addPrescription(Prescription prescription) {
     if (prescription == null) {
       throw new IllegalArgumentException("Prescription cannot be null");
     }
+
+    validateFieldLengths(prescription);
+
     Prescription existingPrescription = getPrescriptionById(prescription.getPrescriptionId());
     if (existingPrescription != null) {
-      throw new IllegalArgumentException("Prescription ID already exists: " + prescription.getPrescriptionId());
+      throw new IllegalArgumentException(
+          "Prescription ID already exists: " + prescription.getPrescriptionId());
     }
     try {
       prescriptionDAO.addPrescription(prescription);
@@ -45,11 +104,12 @@ public class PrescriptionService {
   }
 
   /**
-   * Retrieves all prescriptions from the database.
-   * Returns an unmodifiable list to prevent clients from modifying the returned data,
-   * ensuring data integrity. Returns an empty list if an error occurs or if no prescriptions exist.
+   * Retrieves all prescriptions from the database. Returns an unmodifiable list to prevent clients
+   * from modifying the returned data, ensuring data integrity. Returns an empty list if an error
+   * occurs or if no prescriptions exist.
    *
-   * @return An unmodifiable List containing all prescriptions, or an empty list if none found or an error occurs
+   * @return An unmodifiable List containing all prescriptions, or an empty list if none found or an
+   *     error occurs
    */
   public List<Prescription> getAllPrescriptions() {
     try {
@@ -65,11 +125,12 @@ public class PrescriptionService {
   }
 
   /**
-   * Retrieves a specific prescription by its ID.
-   * Validates that the provided ID is not null or empty before querying the database.
+   * Retrieves a specific prescription by its ID. Validates that the provided ID is not null or
+   * empty before querying the database.
    *
    * @param prescriptionId The unique identifier of the prescription to retrieve
-   * @return The Prescription object if found, or null if the prescription doesn't exist or an error occurs
+   * @return The Prescription object if found, or null if the prescription doesn't exist or an error
+   *     occurs
    * @throws IllegalArgumentException If the prescriptionId is null or empty
    */
   public Prescription getPrescriptionById(String prescriptionId) {
@@ -85,9 +146,9 @@ public class PrescriptionService {
   }
 
   /**
-   * Updates an existing prescription's information in the database.
-   * Validates that the prescription object is not null before proceeding with the update.
-   * This method assumes the prescription already exists in the database.
+   * Updates an existing prescription's information in the database. Validates that the prescription
+   * object is not null before proceeding with the update. This method assumes the prescription
+   * already exists in the database.
    *
    * @param prescription The Prescription object containing updated information
    * @throws IllegalArgumentException If the prescription is null
@@ -97,6 +158,9 @@ public class PrescriptionService {
     if (prescription == null) {
       throw new IllegalArgumentException("Prescription cannot be null");
     }
+
+    validateFieldLengths(prescription);
+
     try {
       prescriptionDAO.updatePrescription(prescription);
       logger.info("Prescription updated successfully: {}", prescription.getPrescriptionId());
@@ -107,9 +171,9 @@ public class PrescriptionService {
   }
 
   /**
-   * Deletes a prescription from the database by its ID.
-   * Validates that the provided ID is not null or empty before attempting deletion.
-   * This operation permanently removes the prescription record from the system.
+   * Deletes a prescription from the database by its ID. Validates that the provided ID is not null
+   * or empty before attempting deletion. This operation permanently removes the prescription record
+   * from the system.
    *
    * @param prescriptionId The unique identifier of the prescription to delete
    * @throws IllegalArgumentException If the prescriptionId is null or empty

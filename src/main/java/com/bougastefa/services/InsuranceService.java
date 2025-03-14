@@ -2,37 +2,84 @@ package com.bougastefa.services;
 
 import com.bougastefa.database.InsuranceDAO;
 import com.bougastefa.models.Insurance;
+import com.bougastefa.utils.FieldLengthConstants;
 import java.sql.SQLException;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Service class that manages the business logic for Insurance entities.
- * This class provides a layer between the controller and data access layers,
- * handling validation, exception management, and logging for all insurance-related operations.
- * It ensures proper business rules are applied before data is persisted or retrieved.
+ * Service class that manages the business logic for Insurance entities. This class provides a layer
+ * between the controller and data access layers, handling validation, exception management, and
+ * logging for all insurance-related operations. It ensures proper business rules are applied before
+ * data is persisted or retrieved.
  */
 public class InsuranceService {
   private InsuranceDAO insuranceDAO = new InsuranceDAO();
   private static final Logger logger = LoggerFactory.getLogger(InsuranceService.class);
 
   /**
-   * Adds a new insurance provider to the system after performing validation checks.
-   * Verifies that the insurance object is not null and that the insurance ID doesn't already exist
-   * before attempting to add it to the database.
+   * Validates that the insurance fields don't exceed database column length limits.
+   *
+   * @param insurance The insurance to validate
+   * @throws IllegalArgumentException If any field exceeds its maximum length
+   */
+  private void validateFieldLengths(Insurance insurance) {
+    if (insurance.getInsuranceId() != null
+        && insurance.getInsuranceId().length() > FieldLengthConstants.INSURANCE_ID_MAX_LENGTH) {
+      throw new IllegalArgumentException(
+          "Insurance ID exceeds maximum length of "
+              + FieldLengthConstants.INSURANCE_ID_MAX_LENGTH
+              + " characters");
+    }
+
+    if (insurance.getCompany() != null
+        && insurance.getCompany().length()
+            > FieldLengthConstants.INSURANCE_COMPANY_NAME_MAX_LENGTH) {
+      throw new IllegalArgumentException(
+          "Company name exceeds maximum length of "
+              + FieldLengthConstants.INSURANCE_COMPANY_NAME_MAX_LENGTH
+              + " characters");
+    }
+
+    if (insurance.getAddress() != null
+        && insurance.getAddress().length() > FieldLengthConstants.INSURANCE_ADDRESS_MAX_LENGTH) {
+      throw new IllegalArgumentException(
+          "Address exceeds maximum length of "
+              + FieldLengthConstants.INSURANCE_ADDRESS_MAX_LENGTH
+              + " characters");
+    }
+
+    if (insurance.getPhone() != null
+        && insurance.getPhone().length() > FieldLengthConstants.INSURANCE_PHONE_MAX_LENGTH) {
+      throw new IllegalArgumentException(
+          "Phone exceeds maximum length of "
+              + FieldLengthConstants.INSURANCE_PHONE_MAX_LENGTH
+              + " characters");
+    }
+  }
+
+  /**
+   * Adds a new insurance provider to the system after performing validation checks. Verifies that
+   * the insurance object is not null and that the insurance ID doesn't already exist before
+   * attempting to add it to the database.
    *
    * @param insurance The Insurance object to be added
-   * @throws IllegalArgumentException If the insurance is null or if an insurance with the same ID already exists
+   * @throws IllegalArgumentException If the insurance is null or if an insurance with the same ID
+   *     already exists
    * @throws ServiceException If a database error occurs while adding the insurance
    */
   public void addInsurance(Insurance insurance) {
     if (insurance == null) {
       throw new IllegalArgumentException("Insurance cannot be null");
     }
+
+    validateFieldLengths(insurance);
+
     Insurance existingInsurance = getInsuranceById(insurance.getInsuranceId());
     if (existingInsurance != null) {
-      throw new IllegalArgumentException("Insurance ID already exists: " + insurance.getInsuranceId());
+      throw new IllegalArgumentException(
+          "Insurance ID already exists: " + insurance.getInsuranceId());
     }
     try {
       insuranceDAO.addInsurance(insurance);
@@ -44,9 +91,9 @@ public class InsuranceService {
   }
 
   /**
-   * Retrieves all insurance providers from the database.
-   * Returns an empty list instead of throwing exceptions if a database error occurs,
-   * providing graceful degradation for UI components that depend on this data.
+   * Retrieves all insurance providers from the database. Returns an empty list instead of throwing
+   * exceptions if a database error occurs, providing graceful degradation for UI components that
+   * depend on this data.
    *
    * @return A List containing all insurance providers, or an empty list if an error occurs
    */
@@ -60,11 +107,12 @@ public class InsuranceService {
   }
 
   /**
-   * Retrieves a specific insurance provider by its ID.
-   * Validates that the provided ID is not null or empty before querying the database.
+   * Retrieves a specific insurance provider by its ID. Validates that the provided ID is not null
+   * or empty before querying the database.
    *
    * @param insuranceId The unique identifier of the insurance to retrieve
-   * @return The Insurance object if found, or null if the insurance doesn't exist or an error occurs
+   * @return The Insurance object if found, or null if the insurance doesn't exist or an error
+   *     occurs
    * @throws IllegalArgumentException If the insuranceId is null or empty
    */
   public Insurance getInsuranceById(String insuranceId) {
@@ -80,8 +128,8 @@ public class InsuranceService {
   }
 
   /**
-   * Updates an existing insurance provider's information in the database.
-   * Validates that the insurance object is not null before proceeding with the update.
+   * Updates an existing insurance provider's information in the database. Validates that the
+   * insurance object is not null before proceeding with the update.
    *
    * @param insurance The Insurance object containing updated information
    * @throws IllegalArgumentException If the insurance is null
@@ -91,6 +139,9 @@ public class InsuranceService {
     if (insurance == null) {
       throw new IllegalArgumentException("Insurance cannot be null");
     }
+
+    validateFieldLengths(insurance);
+
     try {
       insuranceDAO.updateInsurance(insurance);
       logger.info("Insurance updated successfully: {}", insurance.getInsuranceId());
@@ -101,10 +152,10 @@ public class InsuranceService {
   }
 
   /**
-   * Deletes an insurance provider from the database by its ID.
-   * Validates that the provided ID is not null or empty before attempting deletion.
-   * Note: This operation may fail if the insurance provider is referenced by other records
-   * (e.g., insured patients), which would violate referential integrity constraints.
+   * Deletes an insurance provider from the database by its ID. Validates that the provided ID is
+   * not null or empty before attempting deletion. Note: This operation may fail if the insurance
+   * provider is referenced by other records (e.g., insured patients), which would violate
+   * referential integrity constraints.
    *
    * @param insuranceId The unique identifier of the insurance to delete
    * @throws IllegalArgumentException If the insuranceId is null or empty

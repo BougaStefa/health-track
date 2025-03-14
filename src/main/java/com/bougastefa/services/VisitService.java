@@ -2,6 +2,8 @@ package com.bougastefa.services;
 
 import com.bougastefa.database.VisitDAO;
 import com.bougastefa.models.Visit;
+import com.bougastefa.utils.FieldLengthConstants;
+
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.List;
@@ -18,6 +20,41 @@ import org.slf4j.LoggerFactory;
 public class VisitService {
   private VisitDAO visitDAO = new VisitDAO();
   private static final Logger logger = LoggerFactory.getLogger(VisitService.class);
+/**
+ * Validates that the visit fields don't exceed database column length limits.
+ *
+ * @param visit The visit to validate
+ * @throws IllegalArgumentException If any field exceeds its maximum length
+ */
+private void validateFieldLengths(Visit visit) {
+    if (visit.getDoctorId() != null && 
+        visit.getDoctorId().length() > FieldLengthConstants.VISIT_DOCTOR_ID_MAX_LENGTH) {
+        throw new IllegalArgumentException(
+            "Doctor ID exceeds maximum length of " + 
+            FieldLengthConstants.VISIT_DOCTOR_ID_MAX_LENGTH + " characters");
+    }
+    
+    if (visit.getPatientId() != null && 
+        visit.getPatientId().length() > FieldLengthConstants.VISIT_PATIENT_ID_MAX_LENGTH) {
+        throw new IllegalArgumentException(
+            "Patient ID exceeds maximum length of " + 
+            FieldLengthConstants.VISIT_PATIENT_ID_MAX_LENGTH + " characters");
+    }
+    
+    if (visit.getDiagnosis() != null && 
+        visit.getDiagnosis().length() > FieldLengthConstants.VISIT_DIAGNOSIS_MAX_LENGTH) {
+        throw new IllegalArgumentException(
+            "Diagnosis exceeds maximum length of " + 
+            FieldLengthConstants.VISIT_DIAGNOSIS_MAX_LENGTH + " characters");
+    }
+    
+    if (visit.getSymptoms() != null && 
+        visit.getSymptoms().length() > FieldLengthConstants.VISIT_SYMPTOMS_MAX_LENGTH) {
+        throw new IllegalArgumentException(
+            "Symptoms exceeds maximum length of " + 
+            FieldLengthConstants.VISIT_SYMPTOMS_MAX_LENGTH + " characters");
+    }
+}
 
   /**
    * Adds a new visit to the system after performing validation checks.
@@ -32,6 +69,9 @@ public class VisitService {
     if (visit == null) {
       throw new IllegalArgumentException("Visit cannot be null");
     }
+
+    validateFieldLengths(visit);
+
     Visit existingVisit = getVisit(visit.getPatientId(), visit.getDoctorId(), visit.getDateOfVisit());
     if (existingVisit != null) {
       throw new IllegalArgumentException(
@@ -120,6 +160,9 @@ public class VisitService {
     if (visit == null) {
       throw new IllegalArgumentException("Visit cannot be null");
     }
+
+    validateFieldLengths(visit);
+
     try {
       visitDAO.updateVisit(visit);
       logger.info(
