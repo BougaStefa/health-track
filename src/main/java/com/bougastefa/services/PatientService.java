@@ -4,6 +4,7 @@ import com.bougastefa.database.PatientDAO;
 import com.bougastefa.models.InsuredPatient;
 import com.bougastefa.models.Patient;
 import com.bougastefa.utils.FieldLengthConstants;
+import com.bougastefa.utils.InputValidationUtil;
 import java.sql.SQLException;
 import java.util.List;
 import org.slf4j.Logger;
@@ -22,76 +23,38 @@ public class PatientService {
   /**
    * Validates that the patient fields don't exceed database column length limits.
    *
-   * @param prescription The patient to validate
+   * @param patient The patient to validate
    * @throws IllegalArgumentException If any field exceeds its maximum length
    */
   private void validateFieldLengths(Patient patient) {
-    if (patient.getPatientId() != null
-        && patient.getPatientId().length() > FieldLengthConstants.PATIENT_ID_MAX_LENGTH) {
-      throw new IllegalArgumentException(
-          "Patient ID exceeds maximum length of "
-              + FieldLengthConstants.PATIENT_ID_MAX_LENGTH
-              + " characters");
-    }
+    InputValidationUtil.validateStringLength(
+        patient.getPatientId(), FieldLengthConstants.PATIENT_ID_MAX_LENGTH, "Patient ID");
 
-    if (patient.getFirstName() != null
-        && patient.getFirstName().length() > FieldLengthConstants.PATIENT_FIRSTNAME_MAX_LENGTH) {
-      throw new IllegalArgumentException(
-          "First name exceeds maximum length of "
-              + FieldLengthConstants.PATIENT_FIRSTNAME_MAX_LENGTH
-              + " characters");
-    }
+    InputValidationUtil.validateStringLength(
+        patient.getFirstName(), FieldLengthConstants.PATIENT_FIRSTNAME_MAX_LENGTH, "First name");
 
-    if (patient.getSurname() != null
-        && patient.getSurname().length() > FieldLengthConstants.PATIENT_SURNAME_MAX_LENGTH) {
-      throw new IllegalArgumentException(
-          "Surname exceeds maximum length of "
-              + FieldLengthConstants.PATIENT_SURNAME_MAX_LENGTH
-              + " characters");
-    }
+    InputValidationUtil.validateStringLength(
+        patient.getSurname(), FieldLengthConstants.PATIENT_SURNAME_MAX_LENGTH, "Surname");
 
-    if (patient.getPostcode() != null
-        && patient.getPostcode().length() > FieldLengthConstants.PATIENT_POSTCODE_MAX_LENGTH) {
-      throw new IllegalArgumentException(
-          "Postcode exceeds maximum length of "
-              + FieldLengthConstants.PATIENT_POSTCODE_MAX_LENGTH
-              + " characters");
-    }
+    InputValidationUtil.validateStringLength(
+        patient.getPostcode(), FieldLengthConstants.PATIENT_POSTCODE_MAX_LENGTH, "Postcode");
 
-    if (patient.getAddress() != null
-        && patient.getAddress().length() > FieldLengthConstants.PATIENT_ADDRESS_MAX_LENGTH) {
-      throw new IllegalArgumentException(
-          "Address exceeds maximum length of "
-              + FieldLengthConstants.PATIENT_ADDRESS_MAX_LENGTH
-              + " characters");
-    }
+    InputValidationUtil.validateStringLength(
+        patient.getAddress(), FieldLengthConstants.PATIENT_ADDRESS_MAX_LENGTH, "Address");
 
-    if (patient.getEmail() != null
-        && patient.getEmail().length() > FieldLengthConstants.PATIENT_EMAIL_MAX_LENGTH) {
-      throw new IllegalArgumentException(
-          "Email exceeds maximum length of "
-              + FieldLengthConstants.PATIENT_EMAIL_MAX_LENGTH
-              + " characters");
-    }
+    InputValidationUtil.validateStringLength(
+        patient.getEmail(), FieldLengthConstants.PATIENT_EMAIL_MAX_LENGTH, "Email");
 
-    if (patient.getPhone() != null
-        && patient.getPhone().length() > FieldLengthConstants.PATIENT_PHONE_MAX_LENGTH) {
-      throw new IllegalArgumentException(
-          "Phone exceeds maximum length of "
-              + FieldLengthConstants.PATIENT_PHONE_MAX_LENGTH
-              + " characters");
-    }
+    InputValidationUtil.validateStringLength(
+        patient.getPhone(), FieldLengthConstants.PATIENT_PHONE_MAX_LENGTH, "Phone");
 
+    // Additional validation for insured patients
     if (patient instanceof InsuredPatient) {
       InsuredPatient insuredPatient = (InsuredPatient) patient;
-      if (insuredPatient.getInsuranceId() != null
-          && insuredPatient.getInsuranceId().length()
-              > FieldLengthConstants.INSURANCE_ID_MAX_LENGTH) {
-        throw new IllegalArgumentException(
-            "Insurance ID exceeds maximum length of "
-                + FieldLengthConstants.INSURANCE_ID_MAX_LENGTH
-                + " characters");
-      }
+      InputValidationUtil.validateStringLength(
+          insuredPatient.getInsuranceId(),
+          FieldLengthConstants.INSURANCE_ID_MAX_LENGTH,
+          "Insurance ID");
     }
   }
 

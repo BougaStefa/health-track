@@ -3,65 +3,49 @@ package com.bougastefa.services;
 import com.bougastefa.database.DrugDAO;
 import com.bougastefa.models.Drug;
 import com.bougastefa.utils.FieldLengthConstants;
-
+import com.bougastefa.utils.InputValidationUtil;
 import java.sql.SQLException;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Service class that manages the business logic for Drug entities.
- * This class provides an interface between the controller layer and the data access layer,
- * handling validation, exception management, and logging for all drug-related operations.
- * It encapsulates the complexity of database interactions and provides a clean API for
- * drug management functionality.
+ * Service class that manages the business logic for Drug entities. This class provides an interface
+ * between the controller layer and the data access layer, handling validation, exception
+ * management, and logging for all drug-related operations. It encapsulates the complexity of
+ * database interactions and provides a clean API for drug management functionality.
  */
 public class DrugService {
   private DrugDAO drugDAO = new DrugDAO();
   private static final Logger logger = LoggerFactory.getLogger(DrugService.class);
-/**
- * Validates that the drug fields don't exceed database column length limits.
- *
- * @param drug The drug to validate
- * @throws IllegalArgumentException If any field exceeds its maximum length
- */
-private void validateFieldLengths(Drug drug) {
-    if (drug.getDrugId() != null && 
-        drug.getDrugId().length() > FieldLengthConstants.DRUG_ID_MAX_LENGTH) {
-        throw new IllegalArgumentException(
-            "Drug ID exceeds maximum length of " + 
-            FieldLengthConstants.DRUG_ID_MAX_LENGTH + " characters");
-    }
-    
-    if (drug.getName() != null && 
-        drug.getName().length() > FieldLengthConstants.DRUG_NAME_MAX_LENGTH) {
-        throw new IllegalArgumentException(
-            "Drug name exceeds maximum length of " + 
-            FieldLengthConstants.DRUG_NAME_MAX_LENGTH + " characters");
-    }
-    
-    if (drug.getBenefits() != null && 
-        drug.getBenefits().length() > FieldLengthConstants.DRUG_BENEFITS_MAX_LENGTH) {
-        throw new IllegalArgumentException(
-            "Benefits exceed maximum length of " + 
-            FieldLengthConstants.DRUG_BENEFITS_MAX_LENGTH + " characters");
-    }
-    
-    if (drug.getSideEffects() != null && 
-        drug.getSideEffects().length() > FieldLengthConstants.DRUG_SIDE_EFFECTS_MAX_LENGTH) {
-        throw new IllegalArgumentException(
-            "Side effects exceed maximum length of " + 
-            FieldLengthConstants.DRUG_SIDE_EFFECTS_MAX_LENGTH + " characters");
-    }
-}
 
   /**
-   * Adds a new drug to the system after performing validation checks.
-   * Verifies that the drug object is not null and that the drug ID is unique
-   * before attempting to add it to the database.
+   * Validates that the drug fields don't exceed database column length limits.
+   *
+   * @param drug The drug to validate
+   * @throws IllegalArgumentException If any field exceeds its maximum length
+   */
+  private void validateFieldLengths(Drug drug) {
+    InputValidationUtil.validateStringLength(
+        drug.getDrugId(), FieldLengthConstants.DRUG_ID_MAX_LENGTH, "Drug ID");
+
+    InputValidationUtil.validateStringLength(
+        drug.getName(), FieldLengthConstants.DRUG_NAME_MAX_LENGTH, "Drug name");
+
+    InputValidationUtil.validateStringLength(
+        drug.getBenefits(), FieldLengthConstants.DRUG_BENEFITS_MAX_LENGTH, "Benefits");
+
+    InputValidationUtil.validateStringLength(
+        drug.getSideEffects(), FieldLengthConstants.DRUG_SIDE_EFFECTS_MAX_LENGTH, "Side effects");
+  }
+
+  /**
+   * Adds a new drug to the system after performing validation checks. Verifies that the drug object
+   * is not null and that the drug ID is unique before attempting to add it to the database.
    *
    * @param drug The Drug object to be added
-   * @throws IllegalArgumentException If the drug is null or if a drug with the same ID already exists
+   * @throws IllegalArgumentException If the drug is null or if a drug with the same ID already
+   *     exists
    * @throws ServiceException If a database error occurs while adding the drug
    */
   public void addDrug(Drug drug) {
@@ -85,9 +69,9 @@ private void validateFieldLengths(Drug drug) {
   }
 
   /**
-   * Retrieves all drugs from the database.
-   * Returns an empty list instead of throwing exceptions if a database error occurs,
-   * providing graceful degradation for UI components that depend on this data.
+   * Retrieves all drugs from the database. Returns an empty list instead of throwing exceptions if
+   * a database error occurs, providing graceful degradation for UI components that depend on this
+   * data.
    *
    * @return A List containing all drugs in the database, or an empty list if an error occurs
    */
@@ -101,8 +85,8 @@ private void validateFieldLengths(Drug drug) {
   }
 
   /**
-   * Retrieves a specific drug by its ID.
-   * Validates that the provided ID is not null or empty before querying the database.
+   * Retrieves a specific drug by its ID. Validates that the provided ID is not null or empty before
+   * querying the database.
    *
    * @param drugId The unique identifier of the drug to retrieve
    * @return The Drug object if found, or null if the drug doesn't exist or an error occurs
@@ -121,12 +105,12 @@ private void validateFieldLengths(Drug drug) {
   }
 
   /**
-   * Retrieves drugs by their name or name pattern.
-   * Useful for search functionality where exact drug IDs aren't known.
-   * Validates that the name parameter is not null before querying.
+   * Retrieves drugs by their name or name pattern. Useful for search functionality where exact drug
+   * IDs aren't known. Validates that the name parameter is not null before querying.
    *
    * @param name The name or partial name to search for
-   * @return A List of drugs matching the search criteria, or an empty list if none found or an error occurs
+   * @return A List of drugs matching the search criteria, or an empty list if none found or an
+   *     error occurs
    * @throws IllegalArgumentException If the name parameter is null
    */
   public List<Drug> getDrugsByName(String name) {
@@ -142,12 +126,12 @@ private void validateFieldLengths(Drug drug) {
   }
 
   /**
-   * Retrieves drugs by their side effects.
-   * Allows finding drugs with particular side effect patterns, which is useful
-   * for medical analysis and prescribing decisions.
+   * Retrieves drugs by their side effects. Allows finding drugs with particular side effect
+   * patterns, which is useful for medical analysis and prescribing decisions.
    *
    * @param sideEffects The side effect pattern to search for
-   * @return A List of drugs matching the search criteria, or an empty list if none found or an error occurs
+   * @return A List of drugs matching the search criteria, or an empty list if none found or an
+   *     error occurs
    * @throws IllegalArgumentException If the sideEffects parameter is null
    */
   public List<Drug> getDrugsBySideEffects(String sideEffects) {
@@ -163,12 +147,12 @@ private void validateFieldLengths(Drug drug) {
   }
 
   /**
-   * Retrieves drugs by their benefits.
-   * Allows finding drugs with specific therapeutic benefits, which is useful for
-   * treatment planning and medical decision making.
+   * Retrieves drugs by their benefits. Allows finding drugs with specific therapeutic benefits,
+   * which is useful for treatment planning and medical decision making.
    *
    * @param benefits The benefit pattern to search for
-   * @return A List of drugs matching the search criteria, or an empty list if none found or an error occurs
+   * @return A List of drugs matching the search criteria, or an empty list if none found or an
+   *     error occurs
    * @throws IllegalArgumentException If the benefits parameter is null
    */
   public List<Drug> getDrugsByBenefits(String benefits) {
@@ -184,8 +168,8 @@ private void validateFieldLengths(Drug drug) {
   }
 
   /**
-   * Updates an existing drug's information in the database.
-   * Validates that the drug object is not null before proceeding with the update.
+   * Updates an existing drug's information in the database. Validates that the drug object is not
+   * null before proceeding with the update.
    *
    * @param drug The Drug object containing updated information
    * @throws IllegalArgumentException If the drug is null
@@ -208,10 +192,9 @@ private void validateFieldLengths(Drug drug) {
   }
 
   /**
-   * Deletes a drug from the database by its ID.
-   * Validates that the provided ID is not null or empty before attempting deletion.
-   * Note: This operation may fail if the drug is referenced by other records
-   * (e.g., prescriptions), which would violate referential integrity constraints.
+   * Deletes a drug from the database by its ID. Validates that the provided ID is not null or empty
+   * before attempting deletion. Note: This operation may fail if the drug is referenced by other
+   * records (e.g., prescriptions), which would violate referential integrity constraints.
    *
    * @param drugId The unique identifier of the drug to delete
    * @throws IllegalArgumentException If the drugId is null or empty

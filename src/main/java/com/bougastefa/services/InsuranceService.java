@@ -3,6 +3,7 @@ package com.bougastefa.services;
 import com.bougastefa.database.InsuranceDAO;
 import com.bougastefa.models.Insurance;
 import com.bougastefa.utils.FieldLengthConstants;
+import com.bougastefa.utils.InputValidationUtil;
 import java.sql.SQLException;
 import java.util.List;
 import org.slf4j.Logger;
@@ -25,38 +26,19 @@ public class InsuranceService {
    * @throws IllegalArgumentException If any field exceeds its maximum length
    */
   private void validateFieldLengths(Insurance insurance) {
-    if (insurance.getInsuranceId() != null
-        && insurance.getInsuranceId().length() > FieldLengthConstants.INSURANCE_ID_MAX_LENGTH) {
-      throw new IllegalArgumentException(
-          "Insurance ID exceeds maximum length of "
-              + FieldLengthConstants.INSURANCE_ID_MAX_LENGTH
-              + " characters");
-    }
+    InputValidationUtil.validateStringLength(
+        insurance.getInsuranceId(), FieldLengthConstants.INSURANCE_ID_MAX_LENGTH, "Insurance ID");
 
-    if (insurance.getCompany() != null
-        && insurance.getCompany().length()
-            > FieldLengthConstants.INSURANCE_COMPANY_NAME_MAX_LENGTH) {
-      throw new IllegalArgumentException(
-          "Company name exceeds maximum length of "
-              + FieldLengthConstants.INSURANCE_COMPANY_NAME_MAX_LENGTH
-              + " characters");
-    }
+    InputValidationUtil.validateStringLength(
+        insurance.getCompany(),
+        FieldLengthConstants.INSURANCE_COMPANY_NAME_MAX_LENGTH,
+        "Company name");
 
-    if (insurance.getAddress() != null
-        && insurance.getAddress().length() > FieldLengthConstants.INSURANCE_ADDRESS_MAX_LENGTH) {
-      throw new IllegalArgumentException(
-          "Address exceeds maximum length of "
-              + FieldLengthConstants.INSURANCE_ADDRESS_MAX_LENGTH
-              + " characters");
-    }
+    InputValidationUtil.validateStringLength(
+        insurance.getAddress(), FieldLengthConstants.INSURANCE_ADDRESS_MAX_LENGTH, "Address");
 
-    if (insurance.getPhone() != null
-        && insurance.getPhone().length() > FieldLengthConstants.INSURANCE_PHONE_MAX_LENGTH) {
-      throw new IllegalArgumentException(
-          "Phone exceeds maximum length of "
-              + FieldLengthConstants.INSURANCE_PHONE_MAX_LENGTH
-              + " characters");
-    }
+    InputValidationUtil.validateStringLength(
+        insurance.getPhone(), FieldLengthConstants.INSURANCE_PHONE_MAX_LENGTH, "Phone");
   }
 
   /**

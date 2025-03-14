@@ -3,6 +3,7 @@ package com.bougastefa.services;
 import com.bougastefa.database.PrescriptionDAO;
 import com.bougastefa.models.Prescription;
 import com.bougastefa.utils.FieldLengthConstants;
+import com.bougastefa.utils.InputValidationUtil;
 import java.sql.SQLException;
 import java.util.Collections;
 import java.util.List;
@@ -26,50 +27,26 @@ public class PrescriptionService {
    * @throws IllegalArgumentException If any field exceeds its maximum length
    */
   private void validateFieldLengths(Prescription prescription) {
-    if (prescription.getPrescriptionId() != null
-        && prescription.getPrescriptionId().length()
-            > FieldLengthConstants.PRESCRIPTION_ID_MAX_LENGTH) {
-      throw new IllegalArgumentException(
-          "Prescription ID exceeds maximum length of "
-              + FieldLengthConstants.PRESCRIPTION_ID_MAX_LENGTH
-              + " characters");
-    }
+    InputValidationUtil.validateStringLength(
+        prescription.getPrescriptionId(),
+        FieldLengthConstants.PRESCRIPTION_ID_MAX_LENGTH,
+        "Prescription ID");
 
-    if (prescription.getDrugId() != null
-        && prescription.getDrugId().length()
-            > FieldLengthConstants.PRESCRIPTION_DRUG_ID_MAX_LENGTH) {
-      throw new IllegalArgumentException(
-          "Drug ID exceeds maximum length of "
-              + FieldLengthConstants.PRESCRIPTION_DRUG_ID_MAX_LENGTH
-              + " characters");
-    }
+    InputValidationUtil.validateStringLength(
+        prescription.getDrugId(), FieldLengthConstants.PRESCRIPTION_DRUG_ID_MAX_LENGTH, "Drug ID");
 
-    if (prescription.getDoctorId() != null
-        && prescription.getDoctorId().length()
-            > FieldLengthConstants.PRESCRIPTION_DOCTOR_ID_MAX_LENGTH) {
-      throw new IllegalArgumentException(
-          "Doctor ID exceeds maximum length of "
-              + FieldLengthConstants.PRESCRIPTION_DOCTOR_ID_MAX_LENGTH
-              + " characters");
-    }
+    InputValidationUtil.validateStringLength(
+        prescription.getDoctorId(),
+        FieldLengthConstants.PRESCRIPTION_DOCTOR_ID_MAX_LENGTH,
+        "Doctor ID");
 
-    if (prescription.getPatientId() != null
-        && prescription.getPatientId().length()
-            > FieldLengthConstants.PRESCRIPTION_PATIENT_ID_MAX_LENGTH) {
-      throw new IllegalArgumentException(
-          "Patient ID exceeds maximum length of "
-              + FieldLengthConstants.PRESCRIPTION_PATIENT_ID_MAX_LENGTH
-              + " characters");
-    }
+    InputValidationUtil.validateStringLength(
+        prescription.getPatientId(),
+        FieldLengthConstants.PRESCRIPTION_PATIENT_ID_MAX_LENGTH,
+        "Patient ID");
 
-    if (prescription.getComment() != null
-        && prescription.getComment().length()
-            > FieldLengthConstants.PRESCRIPTION_COMMENT_MAX_LENGTH) {
-      throw new IllegalArgumentException(
-          "Comment exceeds maximum length of "
-              + FieldLengthConstants.PRESCRIPTION_COMMENT_MAX_LENGTH
-              + " characters");
-    }
+    InputValidationUtil.validateStringLength(
+        prescription.getComment(), FieldLengthConstants.PRESCRIPTION_COMMENT_MAX_LENGTH, "Comment");
   }
 
   /**

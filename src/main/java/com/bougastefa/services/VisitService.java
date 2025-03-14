@@ -3,7 +3,7 @@ package com.bougastefa.services;
 import com.bougastefa.database.VisitDAO;
 import com.bougastefa.models.Visit;
 import com.bougastefa.utils.FieldLengthConstants;
-
+import com.bougastefa.utils.InputValidationUtil;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.List;
@@ -11,58 +11,44 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Service class that manages the business logic for Visit entities.
- * This class serves as an intermediary between the controller layer and the data access layer,
- * handling validation, exception management, and logging for all visit-related operations.
- * Visit records represent patient-doctor consultations and are identified by a composite key
- * consisting of patientId, doctorId, and dateOfVisit.
+ * Service class that manages the business logic for Visit entities. This class serves as an
+ * intermediary between the controller layer and the data access layer, handling validation,
+ * exception management, and logging for all visit-related operations. Visit records represent
+ * patient-doctor consultations and are identified by a composite key consisting of patientId,
+ * doctorId, and dateOfVisit.
  */
 public class VisitService {
   private VisitDAO visitDAO = new VisitDAO();
   private static final Logger logger = LoggerFactory.getLogger(VisitService.class);
-/**
- * Validates that the visit fields don't exceed database column length limits.
- *
- * @param visit The visit to validate
- * @throws IllegalArgumentException If any field exceeds its maximum length
- */
-private void validateFieldLengths(Visit visit) {
-    if (visit.getDoctorId() != null && 
-        visit.getDoctorId().length() > FieldLengthConstants.VISIT_DOCTOR_ID_MAX_LENGTH) {
-        throw new IllegalArgumentException(
-            "Doctor ID exceeds maximum length of " + 
-            FieldLengthConstants.VISIT_DOCTOR_ID_MAX_LENGTH + " characters");
-    }
-    
-    if (visit.getPatientId() != null && 
-        visit.getPatientId().length() > FieldLengthConstants.VISIT_PATIENT_ID_MAX_LENGTH) {
-        throw new IllegalArgumentException(
-            "Patient ID exceeds maximum length of " + 
-            FieldLengthConstants.VISIT_PATIENT_ID_MAX_LENGTH + " characters");
-    }
-    
-    if (visit.getDiagnosis() != null && 
-        visit.getDiagnosis().length() > FieldLengthConstants.VISIT_DIAGNOSIS_MAX_LENGTH) {
-        throw new IllegalArgumentException(
-            "Diagnosis exceeds maximum length of " + 
-            FieldLengthConstants.VISIT_DIAGNOSIS_MAX_LENGTH + " characters");
-    }
-    
-    if (visit.getSymptoms() != null && 
-        visit.getSymptoms().length() > FieldLengthConstants.VISIT_SYMPTOMS_MAX_LENGTH) {
-        throw new IllegalArgumentException(
-            "Symptoms exceeds maximum length of " + 
-            FieldLengthConstants.VISIT_SYMPTOMS_MAX_LENGTH + " characters");
-    }
-}
 
   /**
-   * Adds a new visit to the system after performing validation checks.
-   * Verifies that the visit object is not null and that a visit with the same
-   * composite key (patientId, doctorId, dateOfVisit) doesn't already exist.
+   * Validates that the visit fields don't exceed database column length limits.
+   *
+   * @param visit The visit to validate
+   * @throws IllegalArgumentException If any field exceeds its maximum length
+   */
+  private void validateFieldLengths(Visit visit) {
+    InputValidationUtil.validateStringLength(
+        visit.getDoctorId(), FieldLengthConstants.VISIT_DOCTOR_ID_MAX_LENGTH, "Doctor ID");
+
+    InputValidationUtil.validateStringLength(
+        visit.getPatientId(), FieldLengthConstants.VISIT_PATIENT_ID_MAX_LENGTH, "Patient ID");
+
+    InputValidationUtil.validateStringLength(
+        visit.getDiagnosis(), FieldLengthConstants.VISIT_DIAGNOSIS_MAX_LENGTH, "Diagnosis");
+
+    InputValidationUtil.validateStringLength(
+        visit.getSymptoms(), FieldLengthConstants.VISIT_SYMPTOMS_MAX_LENGTH, "Symptoms");
+  }
+
+  /**
+   * Adds a new visit to the system after performing validation checks. Verifies that the visit
+   * object is not null and that a visit with the same composite key (patientId, doctorId,
+   * dateOfVisit) doesn't already exist.
    *
    * @param visit The Visit object to be added
-   * @throws IllegalArgumentException If the visit is null or if a visit with the same composite key already exists
+   * @throws IllegalArgumentException If the visit is null or if a visit with the same composite key
+   *     already exists
    * @throws ServiceException If a database error occurs while adding the visit
    */
   public void addVisit(Visit visit) {
@@ -72,7 +58,8 @@ private void validateFieldLengths(Visit visit) {
 
     validateFieldLengths(visit);
 
-    Visit existingVisit = getVisit(visit.getPatientId(), visit.getDoctorId(), visit.getDateOfVisit());
+    Visit existingVisit =
+        getVisit(visit.getPatientId(), visit.getDoctorId(), visit.getDateOfVisit());
     if (existingVisit != null) {
       throw new IllegalArgumentException(
           "Visit already exists for patient: "
@@ -96,9 +83,9 @@ private void validateFieldLengths(Visit visit) {
   }
 
   /**
-   * Retrieves all visits from the database.
-   * Returns an empty list instead of throwing exceptions if a database error occurs,
-   * providing graceful degradation for UI components that depend on this data.
+   * Retrieves all visits from the database. Returns an empty list instead of throwing exceptions if
+   * a database error occurs, providing graceful degradation for UI components that depend on this
+   * data.
    *
    * @return A List containing all visits, or an empty list if an error occurs
    */
@@ -112,9 +99,9 @@ private void validateFieldLengths(Visit visit) {
   }
 
   /**
-   * Retrieves a specific visit by its composite key components.
-   * Validates that all components of the composite key (patientId, doctorId, dateOfVisit)
-   * are not null or empty before querying the database.
+   * Retrieves a specific visit by its composite key components. Validates that all components of
+   * the composite key (patientId, doctorId, dateOfVisit) are not null or empty before querying the
+   * database.
    *
    * @param patientId The ID of the patient involved in the visit
    * @param doctorId The ID of the doctor conducting the visit
@@ -147,10 +134,9 @@ private void validateFieldLengths(Visit visit) {
   }
 
   /**
-   * Updates an existing visit's information in the database.
-   * Validates that the visit object is not null before proceeding with the update.
-   * The composite key (patientId, doctorId, dateOfVisit) is used to identify which 
-   * visit to update, typically allowing changes to symptoms and diagnosis.
+   * Updates an existing visit's information in the database. Validates that the visit object is not
+   * null before proceeding with the update. The composite key (patientId, doctorId, dateOfVisit) is
+   * used to identify which visit to update, typically allowing changes to symptoms and diagnosis.
    *
    * @param visit The Visit object containing updated information
    * @throws IllegalArgumentException If the visit is null
@@ -177,9 +163,9 @@ private void validateFieldLengths(Visit visit) {
   }
 
   /**
-   * Deletes a visit from the database using its composite key components.
-   * Validates that all components of the composite key (patientId, doctorId, dateOfVisit)
-   * are not null or empty before attempting deletion.
+   * Deletes a visit from the database using its composite key components. Validates that all
+   * components of the composite key (patientId, doctorId, dateOfVisit) are not null or empty before
+   * attempting deletion.
    *
    * @param patientId The ID of the patient involved in the visit
    * @param doctorId The ID of the doctor conducting the visit
@@ -217,13 +203,13 @@ private void validateFieldLengths(Visit visit) {
   }
 
   /**
-   * Determines which doctor has seen a particular patient most frequently,
-   * making them the patient's "primary doctor".
-   * Validates that the patient ID is not null or empty before querying the database.
+   * Determines which doctor has seen a particular patient most frequently, making them the
+   * patient's "primary doctor". Validates that the patient ID is not null or empty before querying
+   * the database.
    *
    * @param patientId The ID of the patient to find the primary doctor for
-   * @return The ID of the doctor who has conducted the most visits with this patient,
-   *         or null if the patient has no recorded visits or an error occurs
+   * @return The ID of the doctor who has conducted the most visits with this patient, or null if
+   *     the patient has no recorded visits or an error occurs
    * @throws IllegalArgumentException If the patientId is null or empty
    */
   public String getPrimaryDoctorId(String patientId) {
