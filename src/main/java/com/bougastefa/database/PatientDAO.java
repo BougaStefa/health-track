@@ -29,7 +29,7 @@ public class PatientDAO {
     } else {
       sql =
           "INSERT INTO Patient (patientID, firstname, surname, postcode, address, phone, email)"
-              + " VALUES (?, ?, ?, ?, ?, ?)";
+              + " VALUES (?, ?, ?, ?, ?, ?, ?)";
     }
 
     // Try-with-resources ensures connection resources are automatically closed
@@ -41,8 +41,8 @@ public class PatientDAO {
       stmt.setString(3, patient.getSurname());
       stmt.setString(4, patient.getPostcode());
       stmt.setString(5, patient.getAddress());
-      stmt.setString(6, patient.getPhone());
-      stmt.setString(7, patient.getEmail());
+      stmt.setString(6, patient.getEmail());
+      stmt.setString(7, patient.getPhone());
 
       // Add insurance ID as an additional parameter for insured patients
       if (patient instanceof InsuredPatient) {
@@ -84,9 +84,9 @@ public class PatientDAO {
         if (insuranceid != null) {
           patient =
               new InsuredPatient(
-                  patientid, firstname, surname, postcode, address, phone, email, insuranceid);
+                  patientid, firstname, surname, postcode, address, email, phone, insuranceid);
         } else {
-          patient = new Patient(patientid, firstname, surname, postcode, address, phone, email);
+          patient = new Patient(patientid, firstname, surname, postcode, address, email, phone);
         }
         patients.add(patient);
       }
@@ -118,8 +118,8 @@ public class PatientDAO {
                 rs.getString("surname"),
                 rs.getString("postcode"),
                 rs.getString("address"),
-                rs.getString("phone"),
                 rs.getString("email"),
+                rs.getString("phone"),
                 insuranceId);
           } else {
             return new Patient(
@@ -128,8 +128,8 @@ public class PatientDAO {
                 rs.getString("surname"),
                 rs.getString("postcode"),
                 rs.getString("address"),
-                rs.getString("phone"),
-                rs.getString("email"));
+                rs.getString("email"),
+                rs.getString("phone"));
           }
         }
       }
