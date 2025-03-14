@@ -6,6 +6,8 @@ import java.util.*;
 import java.util.List;
 import java.util.function.Consumer;
 import javax.swing.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 
 /**
  * A reusable form dialog component that can be configured for different entity types.
@@ -315,12 +317,62 @@ public class FormDialog extends JDialog {
      * @param initialValue The initial value for the text field
      * @return This builder, for method chaining
      */
-    public Builder addTextField(String label, String fieldName, String initialValue) {
-      JTextField textField = new JTextField(20);
-      textField.setText(initialValue);
-      fields.add(new FormField<>(label, fieldName, textField));
-      return this;
+public Builder addTextField(String label, String fieldName, String initialValue) {
+  JTextField textField = new JTextField(20);
+  textField.setText(initialValue);
+  
+  // Extract max length from label if it contains the pattern "max X chars"
+  if (label.contains("max ")) {
+    try {
+      String maxLengthStr = label.substring(label.indexOf("max ") + 4);
+      maxLengthStr = maxLengthStr.substring(0, maxLengthStr.indexOf(" chars"));
+      int maxLength = Integer.parseInt(maxLengthStr);
+      
+      // Store the original background color
+      final Color originalColor = textField.getBackground();
+      final Color errorColor = new Color(255, 200, 200); // Light red
+      
+      // Add a document listener to check text length as user types
+      textField.getDocument().addDocumentListener(new DocumentListener() {
+        @Override
+        public void insertUpdate(DocumentEvent e) {
+          checkLength();
+        }
+
+        @Override
+        public void removeUpdate(DocumentEvent e) {
+          checkLength();
+        }
+
+        @Override
+        public void changedUpdate(DocumentEvent e) {
+          checkLength();
+        }
+        
+        private void checkLength() {
+          if (textField.getText().length() > maxLength) {
+            textField.setBackground(errorColor);
+            textField.setToolTipText("Text exceeds maximum length of " + maxLength + " characters");
+          } else {
+            textField.setBackground(originalColor);
+            textField.setToolTipText(null);
+          }
+        }
+      });
+      
+      // Set initial state
+      if (initialValue != null && initialValue.length() > maxLength) {
+        textField.setBackground(errorColor);
+        textField.setToolTipText("Text exceeds maximum length of " + maxLength + " characters");
+      }
+    } catch (Exception e) {
+      // Ignore parsing errors, validation won't be applied
     }
+  }
+  
+  fields.add(new FormField<>(label, fieldName, textField));
+  return this;
+}
 
     /**
      * Adds a checkbox field to the form.
