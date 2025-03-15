@@ -58,7 +58,7 @@ db.password=password
 mvn clean package
 
 # Run the application
-java -jar target/health-track-1.0-SNAPSHOT.jar
+java -jar target/health-track-1.0-SNAPSHOT-jar-with-dependencies.jar
 ```
 
 ## Project Structure
