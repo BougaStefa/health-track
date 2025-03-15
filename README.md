@@ -22,10 +22,11 @@ Health Track is a Java application designed for managing healthcare data. It pro
 - SLF4J (Logging)
 
 ## Prerequisites
-- JDK 11 or higher
-- Docker and Docker Compose
-- Maven
+Before you begin, ensure you have the following installed on your system:
 
+- [JDK 17](https://www.oracle.com/java/technologies/javase/jdk17-archive-downloads.html) or higher
+- [Maven](https://maven.apache.org/download.cgi) (3.6.0 or higher recommended)
+- [Docker](https://www.docker.com/products/docker-desktop) and [Docker Compose](https://docs.docker.com/compose/install/) (for database containerization)
 ## Setup and Installation
 
 ### 1. Clone the repository
@@ -53,6 +54,15 @@ db.password=password
 ```
 
 ### 4. Build and Run
+
+You can run the application using Maven without creating a JAR file (recommended during development):
+
+```bash
+# Compile and run directly
+mvn clean compile exec:java
+```
+
+Alternatively, you can package the application as an executable JAR and run it:
 ```bash
 # Build the application
 mvn clean package
@@ -60,6 +70,25 @@ mvn clean package
 # Run the application
 java -jar target/health-track-1.0-SNAPSHOT-jar-with-dependencies.jar
 ```
+### 5. Troubleshooting
+
+- **Database Connection Issues**: 
+  - Verify Docker is running with `docker ps`
+  - Check if the database container is up with `docker-compose ps`
+  - Try restarting the container: `docker-compose restart`
+
+- **Java Version Issues**:
+  - Verify your Java version with `java -version`
+  - Ensure you're using JDK 17 or higher
+
+- **Maven Issues**:
+  - Check Maven installation with `mvn -version`
+  - Try clearing Maven cache: `mvn dependency:purge-local-repository`
+
+- **Windows-Specific Issues**:
+  - If using Windows, ensure Docker Desktop is running and configured to use Linux containers
+  - For path issues in Windows, use backslashes or quoted paths when necessary
+
 
 ## Project Structure
 - `src/main/java/com/bougastefa/`
