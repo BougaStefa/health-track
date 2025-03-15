@@ -187,16 +187,15 @@ public class PatientPanel extends BasePanel<Patient> {
         "Address (max " + FieldLengthConstants.PATIENT_ADDRESS_MAX_LENGTH + " chars)",
         "address",
         existingPatient != null ? existingPatient.getAddress() : "");
+    builder.addTextField(
+        "Phone (max " + FieldLengthConstants.PATIENT_PHONE_MAX_LENGTH + " chars)",
+        "phone",
+        existingPatient != null ? existingPatient.getPhone() : "");
 
     builder.addTextField(
         "Email (max " + FieldLengthConstants.PATIENT_EMAIL_MAX_LENGTH + " chars)",
         "email",
         existingPatient != null ? existingPatient.getEmail() : "");
-
-    builder.addTextField(
-        "Phone (max " + FieldLengthConstants.PATIENT_PHONE_MAX_LENGTH + " chars)",
-        "phone",
-        existingPatient != null ? existingPatient.getPhone() : "");
 
     // Determine if this patient is insured for initial checkbox state and insurance ID value
     boolean isInsured = existingPatient instanceof InsuredPatient;
