@@ -11,6 +11,7 @@ Health Track is a Java application designed for managing healthcare data. It pro
 - Visit records
 - Advanced filtering functionality
 - Detailed data views and editing capabilities
+- Data validation to ensure integrity
 
 ## Technologies
 - Java
@@ -68,7 +69,7 @@ java -jar target/health-track-1.0-SNAPSHOT.jar
   - `gui/`: Swing UI components
     - `components/`: Reusable UI elements
     - `panels/`: Main application panels
-    - `dialogs/`: Dialog windows
+  - `utils/`: Utility classes and constants
 
 ## Database Schema
 The application connects to a MariaDB database with tables for patients, doctors, visits, prescriptions, drugs, and insurance information. The database is initialized with sample data through the `init.sql` script.
